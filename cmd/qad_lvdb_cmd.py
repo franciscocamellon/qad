@@ -23,6 +23,7 @@
 """
 import os
 import json
+import re
 
 # Import the PyQt and QGIS libraries
 from qgis.PyQt.QtGui import *
@@ -34,104 +35,106 @@ from .qad_generic_cmd import QadCommandClass
 from ..qad_textwindow import QadInputModeEnum, QadInputTypeEnum
 from .. import qad_layer
 from ..qad_msg import QadMsg
-from ..qad_layer import getLayersByName
+from ..qad_layer import getLayersByName, getCurrLayerEditable
 
 
 # Classe che gestisce il comando VSETUP
 class QadLVDBCommandClass(QadCommandClass):
 
-   def instantiateNewCmd(self):
-      """ istanzia un nuovo comando dello stesso tipo """
-      return QadLVDBCommandClass(self.plugIn)
+    def instantiateNewCmd(self):
+        """ istanzia un nuovo comando dello stesso tipo """
+        return QadLVDBCommandClass(self.plugIn)
 
-   def getName(self):
-      return QadMsg.translate("Command_list", "LVDB")
+    def getName(self):
+        return QadMsg.translate("Command_list", "LVDB")
 
-   def getEnglishName(self):
-      return "LVDB"
+    def getEnglishName(self):
+        return "LVDB"
 
-   def connectQAction(self, action):
-      action.triggered.connect(self.plugIn.runLVDBCommand)
+    def connectQAction(self, action):
+        action.triggered.connect(self.plugIn.runLVDBCommand)
 
-   def getIcon(self):
-      return QIcon(":/plugins/qad/icons/lvdb.png")
+    def getIcon(self):
+        return QIcon(":/plugins/qad/icons/lvdb.png")
 
-   def getNote(self):
-      # impostare le note esplicative del comando
-      return QadMsg.translate("Command_LVDB", "Configures the value map from the attributes")
+    def getNote(self):
+        # impostare le note esplicative del comando
+        return QadMsg.translate("Command_LVDB", "Configures the value map from the attributes")
 
-   def __init__(self, plugIn):
-      QadCommandClass.__init__(self, plugIn)
+    def __init__(self, plugIn):
+        QadCommandClass.__init__(self, plugIn)
+        self.iface = self.plugIn.iface
+        self.targetLayer = 'LVDB-FP'
 
-   def verifyLoadedLayer(self):
-      targetLayer = 'LVDB-FP'
-      msgType = QadMsg.translate("Command_LVDB", "Error")
-      msgText = QadMsg.translate(
-         "Command_LVDB", "The LVDB-FP layer does not loaded!")
-      layer = getLayersByName(targetLayer)
-      if layer:
-         selectedFeature = [feature for feature in layer[0].getSelectedFeatures()]
-         if len(selectedFeature) > 0:
-            pass
-         else:
-            # self.waitForPoint()
-            
+    def isLoadedLayer(self):
+        layer = getLayersByName(self.targetLayer)
+        msgType = QadMsg.translate("Command_LVDB", "Error")
+        msgText = '\nThe {} layer is not loaded!\n'.format(self.targetLayer)
+        if layer:
+            self.iface.setActiveLayer(layer[0])
+        else:
             iface.messageBar().pushMessage(msgType,
-                                          'Selecione uma feicao',
-                                          level=Qgis.Critical,
-                                          duration=5)
-            return None, self.showMsg(QadMsg.translate("QAD", '\nPlease select at least one feture from {}\n'.format(layer[0].name())))
-      else:
-         iface.messageBar().pushMessage(msgType,
-                                          msgText,
-                                          level=Qgis.Critical,
-                                          duration=5)
+                                           msgText,
+                                           level=Qgis.Critical,
+                                           duration=5)
+            return None, self.showMsg(QadMsg.translate("QAD", msgText))
 
-   def getCurrLayerEditable(canvas, layer, geomType = None):
-      """
-      Ritorna il layer corrente se é aggiornabile e compatibile con il tipo geomType +
-      eventuale messaggio di errore.
-      Se <geomType> é una lista allora verifica che sia compatibile con almeno un tipo nella lista <geomType>
-      altrimenti se <> None verifica che sia compatibile con il tipo <geomType>
-      """
-      vLayer = canvas.currentLayer()
-      if vLayer is None:
-         return None, QadMsg.translate("QAD", "\nNo current layer.\n")
-      
-      if (vLayer.type() != QgsMapLayer.VectorLayer):
-         return None, QadMsg.translate("QAD", "\nThe current layer is not a vector layer.\n")
+    def isEditable(self):
+        currLayer, errMsg = getCurrLayerEditable(
+            self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
+        if currLayer is None:
+            self.showErr(errMsg)
+            return False, currLayer
+        else:
+            return True, currLayer
 
-      if geomType is not None:
-         if (type(geomType) == list or type(geomType) == tuple): # se lista di tipi
-            if vLayer.geometryType() not in geomType:
-               errMsg = QadMsg.translate("QAD", "\nThe geometry type of the current layer is {0} and it is not valid.\n")
-               errMsg = errMsg + QadMsg.translate("QAD", "Admitted {1} layer type only.\n")
-               errMsg.format(qad_layer.layerGeometryTypeToStr(vLayer.geometryType()), qad_layer.layerGeometryTypeToStr(geomType))
-               return None, errMsg.format(qad_layer.layerGeometryTypeToStr(vLayer.geometryType()), qad_layer.layerGeometryTypeToStr(geomType))
-         else:
-            if vLayer.geometryType() != geomType:
-               errMsg = QadMsg.translate("QAD", "\nThe geometry type of the current layer is {0} and it is not valid.\n")
-               errMsg = errMsg + QadMsg.translate("QAD", "Admitted {1} layer type only.\n")
-               errMsg.format(qad_layer.layerGeometryTypeToStr(vLayer.geometryType()), qad_layer.layerGeometryTypeToStr(geomType))
-               return None, errMsg.format(qad_layer.layerGeometryTypeToStr(vLayer.geometryType()), qad_layer.layerGeometryTypeToStr(geomType))
+    def isFeatureSelected(self):
+        editable, layer = self.isEditable()
+        if editable:
+            # layer = self.iface.activeLayer()
+            selectedFeature = [feature for feature in layer.getSelectedFeatures()]
+            if len(selectedFeature) == 1:
+                return selectedFeature
+            elif len(selectedFeature) > 1:
+                self.showMsg(QadMsg.translate(
+                    "QAD", '\nPlease select only one feature from {}.\n'.format(layer.name())))
+            elif len(selectedFeature) == 0:
+                self.showMsg(QadMsg.translate(
+                    "QAD", '\nPlease select one feature from {}.\n'.format(layer.name())))
 
-      provider = vLayer.dataProvider()
-      if not (provider.capabilities() & QgsVectorDataProvider.EditingCapabilities):
-         return None, QadMsg.translate("QAD", "\nThe current layer is not editable.\n")
-      
-      if not vLayer.isEditable():
-         return None, QadMsg.translate("QAD", "\nThe current layer is not editable.\n")
+    def getClosedLvQuantity(self):
+        selectedFeature = self.isFeatureSelected()
+        
+        targetFields = ['lvf_1', 'lvf_2', 'lvf_3', 'lvf_4',
+                        'lvf_5', 'lvf_6', 'lvf_7', 'lvf_8', 'lvf_9', 'lvf_10']
+        if selectedFeature:
+            fields = selectedFeature[0].fields()
+            for field in fields:
+                if field.name() in targetFields:
+                    closedLVQuantity = self.getClosedLV(selectedFeature[0][field.name()])
+                    
+                    self.showMsg(QadMsg.translate(
+                        "QAD", '\ncampo - {}\n'.format(closedLVQuantity)))
+        else:
+            self.showMsg(QadMsg.translate(
+                    "QAD", '\nPlease select one feature from\n'))
 
-      return vLayer, None
+    def getClosedLV(self, attribute):
+        try:
+            if attribute:
+                print(attribute)
+                regex = re.compile(r'\bclosed:\b', re.IGNORECASE)
+                closedLV = regex.findall(attribute)
+            return closedLV
+        except:
+            pass
 
-   def run(self):
-      self.verifyLoadedLayer()
-      if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
-         self.showMsg(QadMsg.translate("QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
-         return True # fine comando
+    def run(self):
+        self.isLoadedLayer()
+        self.getClosedLvQuantity()
+        if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
+            self.showMsg(QadMsg.translate(
+                "QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
+            return True  # fine comando
 
-      # il layer corrente deve essere editabile e di tipo linea o poligono
-      currLayer, errMsg = qad_layer.getCurrLayerEditable(self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
-      if currLayer is None:
-         self.showErr(errMsg)
-         return True # fine comando
+        # il layer corrente deve essere editabile e di tipo linea o poligono
