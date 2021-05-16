@@ -3,7 +3,7 @@
 /***************************************************************************
  QAD Quantum Aided Design plugin
 
- comando VSETUP che apre la guida di QAD
+ comando LVSETUP che apre la guida di QAD
 
                               -------------------
         begin                : 2015-08-31
@@ -35,28 +35,28 @@ from ..qad_utils import findFile
 from ..qad_msg import QadMsg
 
 
-# Classe che gestisce il comando VSETUP
-class QadVSETUPCommandClass(QadCommandClass):
+# Classe che gestisce il comando LVSETUP
+class QadLVSETUPCommandClass(QadCommandClass):
 
    def instantiateNewCmd(self):
       """ istanzia un nuovo comando dello stesso tipo """
-      return QadVSETUPCommandClass(self.plugIn)
+      return QadLVSETUPCommandClass(self.plugIn)
 
    def getName(self):
-      return QadMsg.translate("Command_list", "VSETUP")
+      return QadMsg.translate("Command_list", "LVSETUP")
 
    def getEnglishName(self):
-      return "VSETUP"
+      return "LVSETUP"
 
    def connectQAction(self, action):
-      action.triggered.connect(self.plugIn.runVSETUPCommand)
+      action.triggered.connect(self.plugIn.runLVSETUPCommand)
 
    def getIcon(self):
       return QIcon(":/plugins/qad/icons/variable.png")
 
    def getNote(self):
       # impostare le note esplicative del comando
-      return QadMsg.translate("Command_VSETUP", "Configures the value map from the attributes")
+      return QadMsg.translate("Command_LVSETUP", "Configures the value map from the attributes")
 
    def __init__(self, plugIn):
       QadCommandClass.__init__(self, plugIn)
@@ -100,11 +100,14 @@ class QadVSETUPCommandClass(QadCommandClass):
                   self.setEditorWidgetSetup(layer,
                                              field.name(),
                                              attrValueMap[layer.name()][field.name()])
+                  
       iface.messageBar().pushMessage("Info",
                                     "Value map configuration done",
                                     level=Qgis.Info,
                                     duration=3)
+      return None, self.showMsg(QadMsg.translate("QAD", "\nValue map configuration done!\n"))
+      
         
-   def run(self, msgMapTool = False, msg = None):
+   def run(self):
       self.editorWidgetSetup()       
       return True

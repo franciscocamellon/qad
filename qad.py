@@ -570,9 +570,10 @@ class Qad(QObject):
       # ellisse
       self.ellipseToolButton = self.createEllipseToolButton() # da vedere
       self.toolBar.addWidget(self.ellipseToolButton)
-      # lv tools camellon
+      # LV TOOLS
       self.lvToolButton = self.createLVToolButton()
       self.toolBar.addWidget(self.lvToolButton)
+      # LV TOOLS
 
       self.toolBar.addAction(self.rectangle_action)
       self.toolBar.addAction(self.polygon_action)
@@ -1052,11 +1053,12 @@ class Qad(QObject):
                                     self.iface.mainWindow())
       self.u_action.triggered.connect(self.runU_Command)
 
-      # VSETUP camellon
-      cmd = self.QadCommands.getCommandObj(QadMsg.translate("Command_list", "VSETUP"))
-      self.vsetup_action = QAction(cmd.getIcon(), cmd.getName(), self.iface.mainWindow())
-      self.vsetup_action.setToolTip(cmd.getToolTipText())
-      cmd.connectQAction(self.vsetup_action)
+      # LV TOOLS
+      # LVSETUP
+      cmd = self.QadCommands.getCommandObj(QadMsg.translate("Command_list", "LVSETUP"))
+      self.lvsetup_action = QAction(cmd.getIcon(), cmd.getName(), self.iface.mainWindow())
+      self.lvsetup_action.setToolTip(cmd.getToolTipText())
+      cmd.connectQAction(self.lvsetup_action)
 
       # LVDB
       cmd = self.QadCommands.getCommandObj(QadMsg.translate("Command_list", "LVDB"))
@@ -1075,6 +1077,7 @@ class Qad(QObject):
       self.lvug_action = QAction(cmd.getIcon(), cmd.getName(), self.iface.mainWindow())
       self.lvug_action.setToolTip(cmd.getToolTipText())
       cmd.connectQAction(self.lvug_action)
+      # LV TOOLS
 
 
    #============================================================================
@@ -1122,16 +1125,18 @@ class Qad(QObject):
       breakMenu.addAction(self.breakBy1Point_action)
       return breakMenu
 
+   # LV TOOLS
    def createLvMenu(self):
-      # menu LV camellon
-      lvMenu = QMenu(QadMsg.translate("Command_list", "BREAK"))
-      cmd = self.QadCommands.getCommandObj(QadMsg.translate("Command_list", "BREAK"))
+      # menu LV
+      lvMenu = QMenu(QadMsg.translate("Command_list", "LVDB"))
+      cmd = self.QadCommands.getCommandObj(QadMsg.translate("Command_list", "LVDB"))
       lvMenu.setIcon(cmd.getIcon())
       lvMenu.addAction(self.lvdb_action)
       lvMenu.addAction(self.lvoh_action)
       lvMenu.addAction(self.lvug_action)
-      lvMenu.addAction(self.vsetup_action)
+      lvMenu.addAction(self.lvsetup_action)
       return lvMenu
+   # LV TOOLS
 
    def createCircleMenu(self):
       # menu Circle
@@ -2070,9 +2075,9 @@ class Qad(QObject):
    def runOPTIONSCommand(self):
       self.runCommandAbortingTheCurrent(QadMsg.translate("Command_list", "OPTIONS"))
 
-   # camellon
-   def runVSETUPCommand(self):
-      self.runCommandAbortingTheCurrent(QadMsg.translate("Command_list", "VSETUP"))
+   # LV TOOLS
+   def runLVSETUPCommand(self):
+      self.runCommandAbortingTheCurrent(QadMsg.translate("Command_list", "LVSETUP"))
 
    def runLVDBCommand(self):
       self.runCommandAbortingTheCurrent(QadMsg.translate("Command_list", "LVDB"))
@@ -2082,6 +2087,7 @@ class Qad(QObject):
 
    def runLVUGCommand(self):
       self.runCommandAbortingTheCurrent(QadMsg.translate("Command_list", "LVUG"))
+   # LV TOOLS
 
    def updateCmdsHistory(self, command):
       # aggiorna la lista della storia degli ultimi comandi usati 

@@ -76,7 +76,8 @@ from .cmd.qad_array_cmd import QadARRAYCommandClass, QadARRAYRECTCommandClass, Q
 from .cmd.qad_divide_cmd import QadDIVIDECommandClass
 from .cmd.qad_measure_cmd import QadMEASURECommandClass
 from .cmd.qad_ellipse_cmd import QadELLIPSECommandClass
-from .cmd.qad_vsetup_cmd import QadVSETUPCommandClass
+# LV TOOLS
+from .cmd.qad_lvsetup_cmd import QadLVSETUPCommandClass
 from .cmd.qad_lvdb_cmd import QadLVDBCommandClass
 from .cmd.qad_lvoh_cmd import QadLVOHCommandClass
 from .cmd.qad_lvug_cmd import QadLVUGCommandClass
@@ -142,7 +143,8 @@ class QadCommandsClass():
       self.__cmdObjs.append(QadDIVIDECommandClass(self.plugIn)) # DIVIDE
       self.__cmdObjs.append(QadMEASURECommandClass(self.plugIn)) # MEASURE
       self.__cmdObjs.append(QadELLIPSECommandClass(self.plugIn)) # ELLIPSE
-      self.__cmdObjs.append(QadVSETUPCommandClass(self.plugIn)) # VSETUP
+      # LV TOOLS
+      self.__cmdObjs.append(QadLVSETUPCommandClass(self.plugIn)) # LVSETUP
       self.__cmdObjs.append(QadLVDBCommandClass(self.plugIn)) # LVDB
       self.__cmdObjs.append(QadLVOHCommandClass(self.plugIn)) # LVOH
       self.__cmdObjs.append(QadLVUGCommandClass(self.plugIn)) # LVUG

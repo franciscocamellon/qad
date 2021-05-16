@@ -64,10 +64,11 @@ class QadLVDBCommandClass(QadCommandClass):
       QadCommandClass.__init__(self, plugIn)
 
    def verifyLoadedLayer(self):
+      targetLayer = 'LVDB-FP'
       msgType = QadMsg.translate("Command_LVDB", "Error")
       msgText = QadMsg.translate(
          "Command_LVDB", "The LVDB-FP layer does not loaded!")
-      layer = getLayersByName('LVDB-FP')
+      layer = getLayersByName(targetLayer)
       if layer:
          selectedFeature = [feature for feature in layer[0].getSelectedFeatures()]
          if len(selectedFeature) > 0:
@@ -79,7 +80,7 @@ class QadLVDBCommandClass(QadCommandClass):
                                           'Selecione uma feicao',
                                           level=Qgis.Critical,
                                           duration=5)
-            return None, self.showMsg(QadMsg.translate("QAD", '\nSelecione uma feicao\n'))
+            return None, self.showMsg(QadMsg.translate("QAD", '\nPlease select at least one feture from {}\n'.format(layer[0].name())))
       else:
          iface.messageBar().pushMessage(msgType,
                                           msgText,
