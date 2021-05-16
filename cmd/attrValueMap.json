@@ -1,0 +1,467 @@
+{
+  "LVDB-FP": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "lvdb_loc": {
+      "map": {
+        "INDOOR": "INDOOR",
+        "OUTDOOR": "OUTDOOR",
+        "Unknown": "Unknown"
+      }
+    },
+    "design": {
+      "map": {
+        "FP 1600 A - 2 in 8 out": "FP 1600 A - 2 in 8 out",
+        "FP 800 A - 2 in 5 out": "FP 800 A - 2 in 5 out",
+        "LVDB 1600 A - 2 in 10 out (CS)": "LVDB 1600 A - 2 in 10 out (CS)",
+        "LVDB 1600 A - 2 in 8 out": "LVDB 1600 A - 2 in 8 out",
+        "LVDB 800 A - 2 in 6 out (CS)": "LVDB 800 A - 2 in 6 out (CS)",
+        "MINI FP 400 A - 2 in 6 out": "MINI FP 400 A - 2 in 6 out"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    }
+  },
+  "LV_UG_Conductor": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "phasing": {
+      "map": {
+        "Y": "Y",
+        "Neutral": "Neutral",
+        "RY": "RY",
+        "Unknown": "Unknown",
+        "YB": "YB",
+        "BR": "BR",
+        "R": "R",
+        "B": "B",
+        "RYB": "RYB"
+      }
+    },
+    "usage": {
+      "map": {
+        "5 FOOT WAYS": "5 FOOT WAYS",
+        "LV LINE": "LV LINE",
+        "PRIVATE LIGHT": "PRIVATE LIGHT",
+        "PUBLIC LIGHT": "PUBLIC LIGHT",
+        "SERVICE LINE": "SERVICE LINE",
+        "Unknown": "Unknown"
+      }
+    },
+    "label": {
+      "map": {
+        "120_4C_AL_PILC": "120_4C_AL_PILC",
+        "120_4C_AL_XLPE": "120_4C_AL_XLPE",
+        "185_4C_AL_PILC": "185_4C_AL_PILC",
+        "185_4C_AL_XLPE": "185_4C_AL_XLPE",
+        "25_4C_AL_PILC": "25_4C_AL_PILC",
+        "25_4C_AL_XLPE": "25_4C_AL_XLPE",
+        "35_4C_AL_XLPE": "35_4C_AL_XLPE",
+        "300_4C_AL_PILC": "300_4C_AL_PILC",
+        "300_4C_AL_XLPE": "300_4C_AL_XLPE",
+        "70_4C_AL_PILC": "70_4C_AL_PILC",
+        "70_4C_AL_XLPE": "70_4C_AL_XLPE",
+        "240_4C_AL_XLPE": "240_4C_AL_XLPE",
+        "240_4C_QUADRAPLEX": "240_4C_QUADRAPLEX",
+        "300_4C_AL_TRIPLEX": "300_4C_AL_TRIPLEX",
+        "ARMOURED_16MM": "ARMOURED_16MM",
+        "4X_300_1C_AL_PVC/PVC": "4X_300_1C_AL_PVC/PVC",
+        "4X_500_1C_AL_PVC/PVC": "4X_500_1C_AL_PVC/PVC",
+        "7X_300_1C_AL_PVC/PVC": "7X_300_1C_AL_PVC/PVC",
+        "7X_500_1C_AL_PVC/PVC": "7X_500_1C_AL_PVC/PVC"
+      }
+    },
+    "dat_qty_cl": {
+      "map": {
+        "Class A": "Class A",
+        "Class B": "Class B",
+        "Class C": "Class C",
+        "Class D": "Class D"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    }
+  },
+  "LV_OH_Conductor": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "phasing": {
+      "map": {
+        "Y": "Y",
+        "Neutral": "Neutral",
+        "RY": "RY",
+        "Unknown": "Unknown",
+        "YB": "YB",
+        "BR": "BR",
+        "R": "R",
+        "B": "B",
+        "RYB": "RYB"
+      }
+    },
+    "usage": {
+      "map": {
+        "5 FOOT WAYS": "5 FOOT WAYS",
+        "LV LINE": "LV LINE",
+        "PRIVATE LIGHT": "PRIVATE LIGHT",
+        "PUBLIC LIGHT": "PUBLIC LIGHT",
+        "SERVICE LINE": "SERVICE LINE",
+        "Unknown": "Unknown"
+      }
+    },
+    "label": {
+      "map": {
+        "3X_185+120+16_ABC_INS": "3X_185+120+16_ABC_INS",
+        "3X_95+70+16_ABC_INS": "3X_95+70+16_ABC_INS",
+        "3X_95+70_ABC_INS": "3X_95+70_ABC_INS",
+        "3X_16+25_ABC_INS": "3X_16+25_ABC_INS",
+        "1X_16+25_ABC_INS": "1X_16+25_ABC_INS",
+        "4X_19/0.064\"_PVC_AL": "4X_19/0.064\"_PVC_AL",
+        "4X_19/0.083\"_PVC_AL": "4X_19/0.083\"_PVC_AL",
+        "3X_19/0.064\"_PVC_AL": "3X_19/0.064\"_PVC_AL",
+        "2X_19/0.064\"_PVC_AL": "2X_19/0.064\"_PVC_AL",
+        "2X_19/0.083\"_PVC_AL": "2X_19/0.083\"_PVC_AL",
+        "2X_7/0.044\"_PVC_AL": "2X_7/0.044\"_PVC_AL",
+        "4X_7/0.173\"_BARE_AL": "4X_7/0.173\"_BARE_AL",
+        "4X_7/0.122\"_BARE_AL": "4X_7/0.122\"_BARE_AL",
+        "2X_7/0.173\"_BARE_AL": "2X_7/0.173\"_BARE_AL",
+        "2X_7/0.122\"_BARE_AL": "2X_7/0.122\"_BARE_AL",
+        "2X_3/0.132\"_BARE_AL": "2X_3/0.132\"_BARE_AL"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    }
+  },
+  "Pole": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "light_ares": {
+      "map": {
+        "NO": "NO",
+        "Unknown": "Unknown",
+        "YES": "YES"
+      }
+    },
+    "struc_type": {
+      "map": {
+        "CONCRETE POLE 30'": "CONCRETE POLE 30'",
+        "GUY STUB": "GUY STUB",
+        "H POLE ANGLE P1, P2, P3, P4": "H POLE ANGLE P1, P2, P3, P4",
+        "H POLE INTERMEDIATE": "H POLE INTERMEDIATE",
+        "H POLE TERMINAL": "H POLE TERMINAL",
+        "MINI TOWER ANGLE": "MINI TOWER ANGLE",
+        "MINI TOWER STRAIGHT": "MINI TOWER STRAIGHT",
+        "MINI TOWER TERMINAL": "MINI TOWER TERMINAL",
+        "SINGLE STEEL 35'": "SINGLE STEEL 35'",
+        "SINGLE STEEL45'": "SINGLE STEEL45'",
+        "SPUN POLE 10.0M-5.0 KN": "SPUN POLE 10.0M-5.0 KN",
+        "SPUN POLE 7.5M-1.1 KN": "SPUN POLE 7.5M-1.1 KN",
+        "SPUN POLE 7.5M-2.0 KN": "SPUN POLE 7.5M-2.0 KN",
+        "SPUN POLE 9.0M-2.0 KN": "SPUN POLE 9.0M-2.0 KN",
+        "UNKNOWN LV POLE": "UNKNOWN LV POLE",
+        "UNKNOWN S/L POLE": "UNKNOWN S/L POLE",
+        "Unknown": "Unknown",
+        "WOODEN POLE 25'": "WOODEN POLE 25'",
+        "WOODEN POLE 30'": "WOODEN POLE 30'"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    },
+    "lv_ptc": {
+      "map": {
+        "Yes": "Yes",
+        "No": "No"
+      }
+    }
+  },
+  "Street_Light": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "phasing": {
+      "map": {
+        "R": "R",
+        "Y": "Y",
+        "B": "B",
+        "Unknown": "Unknown"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    },
+    "cont_dev": {
+      "map": {
+        "NONE": "NONE",
+        "PANEL": "PANEL",
+        "PHOTO CELL": "PHOTO CELL",
+        "TIME SWITCH": "TIME SWITCH",
+        "Unknown": "Unknown"
+      }
+    }
+  },
+  "LV_Fuse": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "phasing": {
+      "map": {
+        "Y": "Y",
+        "Neutral": "Neutral",
+        "RY": "RY",
+        "Unknown": "Unknown",
+        "YB": "YB",
+        "BR": "BR",
+        "R": "R",
+        "B": "B",
+        "RYB": "RYB"
+      }
+    },
+    "class": {
+      "map": {
+        "LV FUSE SWITCH": "LV FUSE SWITCH",
+        "BLACK BOX DOUBLE": "BLACK BOX DOUBLE",
+        "BLACK BOX": "BLACK BOX",
+        "Unknown": "Unknown",
+        "POLE FUSE": "POLE FUSE",
+        "CUT OUT": "CUT OUT",
+        "BLACK BOX SINGLE": "BLACK BOX SINGLE",
+        "BLACK BOX TRIPLE": "BLACK BOX TRIPLE",
+        "GREEN BOX": "GREEN BOX"
+      }
+    },
+    "normal_sta ": {
+      "map": {
+        "CLOSED": "CLOSED",
+        "OPEN": "OPEN"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    }
+  },
+  "LV_Cable_Joint": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "class": {
+      "map": {
+        "END POINT": "END POINT",
+        "LV JOINT": "LV JOINT",
+        "LV POT END": "LV POT END",
+        "LV TERMINAL": "LV TERMINAL",
+        "SL CABLE TERMINAL": "SL CABLE TERMINAL",
+        "SL POT END": "SL POT END",
+        "Unknown": "Unknown"
+      }
+    },
+    "type": {
+      "map": {
+        "BOLTED": "BOLTED",
+        "COLD SHRINK": "COLD SHRINK",
+        "COMPOUND": "COMPOUND",
+        "COMPRESSION": "COMPRESSION",
+        "HEAT SHRINK": "HEAT SHRINK",
+        "MV TERMINAL": "MV TERMINAL",
+        "PIN AND SOCKET": "PIN AND SOCKET",
+        "POT END": "POT END",
+        "PRE-MOULDED": "PRE-MOULDED",
+        "RESIN TYPE": "RESIN TYPE",
+        "Unknown": "Unknown"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    }
+  },
+  "Demand_Point": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    }
+  },
+  "Structure_Duct": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "size": {
+      "map": {
+        "4\"": "4\"",
+        "6\"": "6\"",
+        "8\"": "8\"",
+        "Unknown": "Unknown"
+      }
+    },
+    "method": {
+      "map": {
+        "Cable Bridge": "Cable Bridge",
+        "Common Utility Tunnel": "Common Utility Tunnel",
+        "HDD": "HDD",
+        "Micro Tunnelling": "Micro Tunnelling",
+        "Open Cut": "Open Cut",
+        "Pipe Jacking": "Pipe Jacking",
+        "Unknown": "Unknown"
+      }
+    },
+    "way": {
+      "map": {
+        "1": "1",
+        "10": "10",
+        "11": "11",
+        "12": "12",
+        "13": "13",
+        "14": "14",
+        "15": "15",
+        "16": "16",
+        "17": "17",
+        "18": "18",
+        "19": "19",
+        "2": "2",
+        "20": "20",
+        "24": "24",
+        "3": "3",
+        "36": "36",
+        "4": "4",
+        "5": "5",
+        "6": "6",
+        "66": "66",
+        "7": "7",
+        "8": "8",
+        "9": "9",
+        "HDD": "HDD",
+        "Open Cut": "Open Cut"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    }
+  },
+  "Manhole": {
+    "status": {
+      "map": {
+        "Abandoned": "Abandoned",
+        "Existing": "Existing",
+        "Inactive": "Inactive",
+        "Proposed": "Proposed",
+        "Proposed Abandon": "Proposed Abandon",
+        "Proposed Remove": "Proposed Remove",
+        "Proposed Replace": "Proposed Replace",
+        "Removed": "Removed",
+        "Temporary": "Temporary"
+      }
+    },
+    "type": {
+      "map": {
+        "Corner Manhole": "Corner Manhole",
+        "Straight Manhole": "Straight Manhole",
+        "T Manhole": "T Manhole",
+        "Type L": "Type L",
+        "Type M": "Type M",
+        "Type N": "Type N",
+        "Type O": "Type O",
+        "Unknown": "Unknown"
+      }
+    },
+    "db_oper": {
+      "map": { "Insert": "Insert", "Update": "Update", "Delete": "Delete" }
+    }
+  }
+}
