@@ -28,14 +28,21 @@ import re
 # Import the PyQt and QGIS libraries
 from qgis.PyQt.QtGui import *
 from qgis.utils import iface
-from qgis.core import Qgis, QgsProject, QgsWkbTypes
+from qgis.core import Qgis, QgsProject, QgsWkbTypes, QgsPointXY
 
 from .qad_lvdb_maptool import Qad_lvdb_maptool, Qad_lvdb_maptool_ModeEnum
 from .qad_generic_cmd import QadCommandClass
-from ..qad_textwindow import QadInputModeEnum, QadInputTypeEnum
-from ..qad_getpoint import QadGetPointDrawModeEnum
-from .. import qad_layer
 from ..qad_msg import QadMsg
+from ..qad_getpoint import QadGetPointDrawModeEnum
+from ..qad_textwindow import QadInputModeEnum, QadInputTypeEnum
+from .qad_ssget_cmd import QadSSGetClass
+from ..qad_entity import QadCacheEntitySet, QadEntityTypeEnum, QadCacheEntitySetIterator
+from ..qad_variables import QadVariables
+
+from .. import qad_utils
+from .. import qad_layer
+from ..qad_dim import QadDimStyles, QadDimEntity, appendDimEntityIfNotExisting
+from ..qad_multi_geom import fromQadGeomToQgsGeom
 from ..qad_layer import getLayersByName, getCurrLayerEditable
 
 
@@ -67,15 +74,36 @@ class QadLVDBCommandClass(QadCommandClass):
         self.iface = self.plugIn.iface
         self.targetLayer = 'LVDB-FP'
         self.lvFuse = 0
+        self.maxNumberFuses = QadVariables.get(QadMsg.translate("Environment variables", "MAXNUMBEROFFUSES"))
+        self.SSGetClass = QadSSGetClass(plugIn)
+        self.SSGetClass.onlyEditableLayers = True
+        self.cacheEntitySet = QadCacheEntitySet()
+        self.basePt = QgsPointXY()
+
+    def __del__(self):
+        QadCommandClass.__del__(self)
+        del self.SSGetClass
 
     def getPointMapTool(self, drawMode = QadGetPointDrawModeEnum.NONE):
-      if (self.plugIn is not None):
-         if self.PointMapTool is None:
-            self.PointMapTool = Qad_lvdb_maptool(self.plugIn)
-         return self.PointMapTool
+      if self.step == 0: # quando si é in fase di selezione entità
+         return self.SSGetClass.getPointMapTool()
       else:
-         return None
+         if (self.plugIn is not None):
+            if self.PointMapTool is None:
+               self.PointMapTool = Qad_lvdb_maptool(self.plugIn)
+            return self.PointMapTool
+         else:
+            return None
 
+    def getCurrentContextualMenu(self):
+        if self.step == 0: # quando si é in fase di selezione entità
+            return None # return self.SSGetClass.getCurrentContextualMenu()
+        else:
+            return self.contextualMenu
+
+    #============================================================================
+    # FUNCTIONS
+    #============================================================================
     def isLoadedLayer(self):
         layer = getLayersByName(self.targetLayer)
         msgType = QadMsg.translate("Command_LVDB", "Error")
@@ -93,8 +121,8 @@ class QadLVDBCommandClass(QadCommandClass):
         currLayer, errMsg = getCurrLayerEditable(
             self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
         if currLayer is None:
-            self.showErr(errMsg)
-            return False, currLayer
+            
+            return False, self.showErr(errMsg)
         else:
             return True, currLayer
 
@@ -109,6 +137,7 @@ class QadLVDBCommandClass(QadCommandClass):
             elif featLen == 0 or featLen > 1:
                 self.showMsg(QadMsg.translate(
                     "QAD", '\nPlease select one feature from {}.\n'.format(layer.name())))
+                return False
 
     def getClosedLvQuantity(self):
         selectedFeature = self.isFeatureSelected()
@@ -118,7 +147,7 @@ class QadLVDBCommandClass(QadCommandClass):
                 closed = self.getClosedLV(selectedFeature[0][field.name()])
                 if closed == 'CLOSED:':
                     self.lvFuse += 1
-            return self.lvFuse
+            return '0', self.lvFuse
 
     def getClosedLV(self, attribute):
         try:
@@ -129,38 +158,51 @@ class QadLVDBCommandClass(QadCommandClass):
         except:
             pass
 
-    # ============================================================================
-    # waitForNumOfLvFuse
-    # ============================================================================
-    def waitForNumOfLvFuse(self):      
-        # imposto il map tool
-        self.getPointMapTool().setMode(Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER)
-        self.getPointMapTool().gapType = self.gapType                        
-
-        keyWords = QadMsg.translate("Command_OFFSET", "All") + "/" + \
-                    QadMsg.translate("Command_OFFSET", "None")                
-        default = QadMsg.translate("Command_OFFSET", "None")
-        prompt = QadMsg.translate("Command_OFFSET", "Specify the number of LV fuse to draw [{0}] <{1}>: ").format(keyWords, unicode(default))
-
-        englishKeyWords = "All" + "/" + "None"
-        keyWords += "_" + englishKeyWords
-        # si appresta ad attendere un punto o enter o una parola chiave o un numero reale     
-        # msg, inputType, default, keyWords, nessun controllo
-        self.waitFor(prompt, \
-                    QadInputTypeEnum.POINT2D | QadInputTypeEnum.FLOAT | QadInputTypeEnum.KEYWORDS, \
-                    default, \
-                    keyWords, \
-                    QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)      
-        self.step = 1 
-
-
-
-    def run(self):
-        self.isLoadedLayer()
-        self.getClosedLvQuantity()
+    def run(self, msgMapTool = False, msg = None):
         if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
             self.showMsg(QadMsg.translate(
                 "QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
             return True  # fine comando
 
-        # il layer corrente deve essere editabile e di tipo linea o poligono
+        currLayer, errMsg = getCurrLayerEditable(
+            self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
+        if currLayer is None:
+            self.showErr(errMsg)
+            return True 
+
+        #=========================================================================
+        # RICHIESTA SELEZIONE OGGETTI
+        if self.step == 0: # inizio del comando
+            if self.SSGetClass.run(msgMapTool, msg) == True:
+            # selezione terminata
+                self.step = 1
+                self.getPointMapTool().refreshSnapType() # aggiorno lo snapType che può essere variato dal maptool di selezione entità                    
+                return self.run(msgMapTool, msg)
+
+        #=========================================================================
+        # SPOSTA OGGETTI
+        elif self.step == 1: # VERIFICAR POR SELEÇÃO MAIOR QUE UM
+            if self.SSGetClass.entitySet.count() == 0:
+                return True # fine comando
+            self.cacheEntitySet.appendEntitySet(self.SSGetClass.entitySet)
+
+            # imposto il map tool
+            self.getPointMapTool().cacheEntitySet = self.cacheEntitySet
+            self.getPointMapTool().setMode(Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER)
+            min, max = self.getClosedLvQuantity()                                
+
+            keyWords = QadMsg.translate("Command_LVDB", str(min))  + "/" + QadMsg.translate("Command_LVDB", str(max))
+            default = QadMsg.translate("Command_OFFSET", "All")
+            prompt = QadMsg.translate("Command_LVDB", "Specify number of fuses to draw [{0}] <{1}>: ").format(keyWords, default)
+            
+            englishKeyWords = str(min) + "/" + str(max)
+            keyWords += "_" + englishKeyWords
+            # si appresta ad attendere un punto o enter o una parola chiave         
+            # msg, inputType, default, keyWords, nessun controllo
+            self.waitFor(prompt, \
+                        QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS, \
+                        default, \
+                        keyWords, \
+                        QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)      
+            self.step = 2      
+            return False

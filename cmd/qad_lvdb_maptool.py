@@ -41,15 +41,13 @@ from ..qad_geom_relations import getQadGeomClosestPart
 #===============================================================================
 class Qad_lvdb_maptool_ModeEnum():
    # si richiede il primo punto per calcolo offset 
-   ASK_FOR_LV_FUSE_NUMBER = 1     
+   NONE_KNOWN_ASK_FOR_BASE_PT = 1     
    # noto il primo punto per calcolo offset si richiede il secondo punto
-   FIRST_OFFSET_PT_KNOWN_ASK_FOR_SECOND_PT = 2     
+   ASK_FOR_LV_FUSE_NUMBER = 2     
    # nota la distanza di offset si richiede il punto per stabilire da che parte
-   OFFSET_KNOWN_ASK_FOR_SIDE_PT = 3
+   FUSE_NUMBER_KNOWN_ASK_FOR_DRAW_CONDUCTOR = 3
    # si richiede il punto di passaggio per stabilire da che parte e a quale offset
-   ASK_FOR_PASSAGE_PT = 4  
-   # si richiede la selezione di un oggetto
-   ASK_FOR_ENTITY_SELECTION = 5  
+   ASK_FOR_DRAW_CONUCTOR = 4
 
 #===============================================================================
 # Qad_offset_maptool class
@@ -59,14 +57,8 @@ class Qad_lvdb_maptool(QadGetPoint):
    def __init__(self, plugIn):
       QadGetPoint.__init__(self, plugIn)
                         
-      self.firstPt = None
-      self.layer = None
-      self.subGeom = None
-      self.subGeomAsPolyline = None # geometria sotto forma di lista di punti
-      self.offset = 0
-      self.lastOffSetOnLeftSide = 0
-      self.lastOffSetOnRightSide = 0
-      self.gapType = 0     
+      self.basePt = None
+      self.cacheEntitySet = None
       self.__highlight = QadHighlight(self.canvas)
 
    def hidePointMapToolMarkers(self):
@@ -129,12 +121,10 @@ class Qad_lvdb_maptool(QadGetPoint):
    def canvasMoveEvent(self, event):
       QadGetPoint.canvasMoveEvent(self, event)
       
-      # nota la distanza di offset si richiede il punto per stabilire da che parte
       if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
+         # chamar a função que desnha os angulos referencia
          print('Hello world')                           
-      # # si richiede il punto di passaggio per stabilire da che parte e a quale offset
-      # elif self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_PASSAGE_PT:
-      #    self.addOffSetGeometries(self.tmpPoint)                           
+                                 
          
     
    def activate(self):
@@ -149,13 +139,19 @@ class Qad_lvdb_maptool(QadGetPoint):
          pass
 
    def setMode(self, mode):
-      self.clear()
       self.mode = mode
       # si richiede il primo punto per calcolo offset
-      if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
+      if self.mode == Qad_lvdb_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_BASE_PT:
          self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
-         self.onlyEditableLayers = False
+         self.__highlight.reset()
+      elif self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
+         self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
+         self.setDrawMode(QadGetPointDrawModeEnum.NONE)
+      elif self.mode == Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_DRAW_CONDUCTOR:
+         self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
+         self.setDrawMode(QadGetPointDrawModeEnum.NONE)
+      
       # # noto il primo punto per calcolo offset si richiede il secondo punto
       # if self.mode == Qad_lvdb_maptool_ModeEnum.FIRST_OFFSET_PT_KNOWN_ASK_FOR_SECOND_PT:
       #    self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
