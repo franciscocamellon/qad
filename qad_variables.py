@@ -776,6 +776,20 @@ class QadVariablesClass():
                                                             VariableDescr, \
                                                             QadVariableLevelEnum.GLOBAL)
       
+      # NUMBEROFFUSES (int). Variabile globale.
+      VariableName = QadMsg.translate("Environment variables", "MAXNUMBEROFFUSES") 
+      VariableDescr = QadMsg.translate("Environment variables", "Sets thee max number of LV fuses to draw" + \
+                                       "\n0 = Don't draw any LV fuse." + \
+                                       "\n>0 = Draw a specific number of fuses get from the layer attribute." + \
+                                       "\n>100 = Draws the max number of LV fuses accordingly to the attribute layer.")
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(0), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 100, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
+      
       # ORTHOMODE (int). Variabile del progetto.
       # 0 = modalità di movimento ortogonale cursore disabilitata
       # 1 = modalità di movimento ortogonale cursore abilitata
