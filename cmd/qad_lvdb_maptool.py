@@ -41,13 +41,15 @@ from ..qad_geom_relations import getQadGeomClosestPart
 #===============================================================================
 class Qad_lvdb_maptool_ModeEnum():
    # si richiede il primo punto per calcolo offset 
-   NONE_KNOWN_ASK_FOR_BASE_PT = 1     
+   # NONE_KNOWN_ASK_FOR_BASE_PT = 1     
    # noto il primo punto per calcolo offset si richiede il secondo punto
-   ASK_FOR_LV_FUSE_NUMBER = 2     
+   ASK_FOR_LV_FUSE_NUMBER = 1     
    # nota la distanza di offset si richiede il punto per stabilire da che parte
-   FUSE_NUMBER_KNOWN_ASK_FOR_DRAW_CONDUCTOR = 3
+   FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE = 2
    # si richiede il punto di passaggio per stabilire da che parte e a quale offset
-   ASK_FOR_DRAW_CONUCTOR = 4
+   LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONUCTOR = 3
+
+   DRAW_CONUCTOR_KNOWN_ASK_FOR_FILLING_ATTRIBUTES = 4
 
 #===============================================================================
 # Qad_offset_maptool class
@@ -141,14 +143,17 @@ class Qad_lvdb_maptool(QadGetPoint):
    def setMode(self, mode):
       self.mode = mode
       # si richiede il primo punto per calcolo offset
-      if self.mode == Qad_lvdb_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_BASE_PT:
+      if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
          self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
          self.__highlight.reset()
-      elif self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
+      elif self.mode == Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE:
          self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
-      elif self.mode == Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_DRAW_CONDUCTOR:
+      elif self.mode == Qad_lvdb_maptool_ModeEnum.LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONUCTOR:
+         self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
+         self.setDrawMode(QadGetPointDrawModeEnum.NONE)
+      elif self.mode == Qad_lvdb_maptool_ModeEnum.DRAW_CONUCTOR_KNOWN_ASK_FOR_FILLING_ATTRIBUTES:
          self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
       
