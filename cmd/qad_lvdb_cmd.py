@@ -73,7 +73,8 @@ class QadLVDBCommandClass(QadCommandClass):
         QadCommandClass.__init__(self, plugIn)
         self.iface = self.plugIn.iface
         self.targetLayer = 'LVDB-FP'
-        self.lvFuse = 0
+        self.lvFuseCount = 0
+        self.parameters = dict()
         self.maxNumberFuses = QadVariables.get(
             QadMsg.translate("Environment variables", "MAXNUMBEROFFUSES"))
         self.SSGetClass = QadSSGetClass(plugIn)
@@ -140,15 +141,16 @@ class QadLVDBCommandClass(QadCommandClass):
                     "QAD", '\nPlease select one feature from {}.\n'.format(layer.name())))
                 return False
 
-    def getClosedLvQuantity(self):
+    def getClosedLvRange(self):
         selectedFeature = self.isFeatureSelected()
         if selectedFeature:
             fields = selectedFeature[0].fields()
             for field in fields:
-                closed = self.getClosedLV(selectedFeature[0][field.name()])
-                if closed == 'CLOSED:':
-                    self.lvFuse += 1
-            return '0', self.lvFuse
+                lvFuse = self.getClosedLV(selectedFeature[0][field.name()])
+                if lvFuse == 'CLOSED:':
+                    self.lvFuseCount += 1
+            self.lvFuseCount += 1
+            return range(1,self.lvFuseCount)
 
     def getClosedLV(self, attribute):
         try:
@@ -158,6 +160,16 @@ class QadLVDBCommandClass(QadCommandClass):
             return closedLV[0]
         except:
             pass
+
+    def getLvdbAngle(self):
+        selectedFeature = self.isFeatureSelected()
+        if selectedFeature:
+            angleField = selectedFeature[0]["lvdb_angle"]
+        return angleField
+
+    # ============================================================================
+    # END FUNCTIONS
+    # ============================================================================
 
     def run(self, msgMapTool=False, msg=None):
         if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
@@ -187,19 +199,27 @@ class QadLVDBCommandClass(QadCommandClass):
             if self.SSGetClass.entitySet.count() == 0:
                 return True  # fine comando
             self.cacheEntitySet.appendEntitySet(self.SSGetClass.entitySet)
+            print(self.cacheEntitySet.getLayerList())
 
             # imposto il map tool
             self.getPointMapTool().cacheEntitySet = self.cacheEntitySet
             self.getPointMapTool().setMode(Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER)
-            min, max = self.getClosedLvQuantity()
+            lvFuseRange = self.getClosedLvRange()
 
-            keyWords = QadMsg.translate("Command_LVDB", str(
-                min)) + "/" + QadMsg.translate("Command_LVDB", str(max))
+            keyWords = QadMsg.translate("Command_LVDB", "None") + "/" 
+            for lvFuse in lvFuseRange:
+                keyWords += QadMsg.translate("Command_LVDB", str(lvFuse)) + "/" 
+            keyWords += QadMsg.translate("Command_LVDB", "All")
+            print(keyWords)
+           
+            # keyWords = QadMsg.translate("Command_LVDB", str(
+            #     min)) + "/" + QadMsg.translate("Command_LVDB", str(max))
             default = QadMsg.translate("Command_LVDB", "All")
             prompt = QadMsg.translate(
                 "Command_LVDB", "Specify number of fuses to draw [{0}] <{1}>: ").format(keyWords, default)
 
-            englishKeyWords = str(min) + "/" + str(max)
+            englishKeyWords = "All"
+            # englishKeyWords = str(min) + "/" + str(max)
             keyWords += "_" + englishKeyWords
             # si appresta ad attendere un punto o enter o una parola chiave
             # msg, inputType, default, keyWords, nessun controllo
@@ -226,27 +246,26 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = self.getPointMapTool().point
             else:  # il punto arriva come parametro della funzione
                 value = msg
+                self.parameters["lvFuseToDraw"] = value
 
             if value is None or type(value) == unicode:
-                print('self.step == 2 - if: ', value)
                 self.basePt.set(0, 0)
-                print('self.basePt: ', self.basePt)
                 self.getPointMapTool().basePt = self.basePt
                 self.getPointMapTool().setMode(
                     Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE)
+
+                lvdbAngle = self.getLvdbAngle()
                 keyWords = QadMsg.translate(
-                    "Command_LVDB", "Yes") + "/" + QadMsg.translate("Command_LVDB", "Fill")
-                default = QadMsg.translate("Command_OFFSET", "Fill")
+                    "Command_LVDB", lvdbAngle) + "/" + QadMsg.translate("Command_LVDB", "Insert")
+                default = QadMsg.translate("Command_OFFSET", lvdbAngle)
                 prompt = QadMsg.translate(
                     "Command_LVDB", "Insert the angle of lvdb-fp or auto fill [{0}] <{1}>: ").format(keyWords, default)
 
-                englishKeyWords = "Yes" + "/" + "Fill"
+                englishKeyWords = "Insert"
                 keyWords += "_" + englishKeyWords
 
-                # si appresta ad attendere un punto o enter o una parola chiave
-                # msg, inputType, default, keyWords, nessun controllo
                 self.waitFor(prompt,
-                             QadInputTypeEnum.STRING | QadInputTypeEnum.KEYWORDS,
+                             QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS,
                              default,
                              keyWords,
                              QadInputModeEnum.NOT_NULL)
@@ -295,6 +314,8 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = self.getPointMapTool().point
             else:
                 value = msg
+                self.parameters["lvdbAngle"] = int(value)
+                print(self.parameters)
 
             if value is None or type(value) == unicode:
                 print('self.step == 3 - if: ', value)
@@ -343,3 +364,27 @@ class QadLVDBCommandClass(QadCommandClass):
                 self.step = 4
 
             return False
+
+
+        #=========================================================================
+        # RISPOSTA ALLA RICHIESTA DEL PUNTO DI SPOSTAMENTO (da step = 2)
+        elif self.step == 4: # dopo aver atteso un punto o un numero reale si riavvia il comando
+            if msgMapTool == True: # il punto arriva da una selezione grafica
+                # la condizione seguente si verifica se durante la selezione di un punto
+                # é stato attivato un altro plugin che ha disattivato Qad
+                # quindi stato riattivato il comando che torna qui senza che il maptool
+                # abbia selezionato un punto            
+                if self.getPointMapTool().point is None: # il maptool é stato attivato senza un punto
+                    if self.getPointMapTool().rightButton == True: # se usato il tasto destro del mouse
+                        return True # fine comando
+                else:
+                    self.setMapTool(self.getPointMapTool()) # riattivo il maptool
+                    return False
+
+                value = self.getPointMapTool().point
+            else: # il punto arriva come parametro della funzione
+                value = msg
+                self.parameters["drawIncoming"] = value
+
+            print(self.parameters)
+            return True
