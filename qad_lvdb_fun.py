@@ -92,3 +92,16 @@ def drawReferenceLines(selectedLvdbPoint):
 
 
     return None
+# ===============================================================================
+# transformFromCRSToCRS
+# ===============================================================================
+
+def transform(self, coordTransform):
+      """Transform this geometry as described by CoordinateTranasform ct."""
+      self.center = coordTransform.transform(self.center)      
+
+def transformFromCRSToCRS(self, sourceCRS, destCRS):
+    """Transform this geometry as described by CRS."""
+    if (sourceCRS is not None) and (destCRS is not None) and sourceCRS != destCRS:       
+        coordTransform = QgsCoordinateTransform(sourceCRS, destCR, QgsProject.instance()) # trasformo le coord
+        self.center =  coordTransform.transform(self.center)
