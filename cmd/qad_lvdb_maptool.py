@@ -47,9 +47,9 @@ class Qad_lvdb_maptool_ModeEnum():
    # nota la distanza di offset si richiede il punto per stabilire da che parte
    FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE = 2
    # si richiede il punto di passaggio per stabilire da che parte e a quale offset
-   LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONUCTOR = 3
+   LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONDUCTOR = 3
 
-   DRAW_CONUCTOR_KNOWN_ASK_FOR_FILLING_ATTRIBUTES = 4
+   DRAW_CONDUCTOR_KNOWN_ASK_FOR_FILLING_ATTRIBUTES = 4
 
 #===============================================================================
 # Qad_offset_maptool class
@@ -150,10 +150,10 @@ class Qad_lvdb_maptool(QadGetPoint):
       elif self.mode == Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE:
          self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
-      elif self.mode == Qad_lvdb_maptool_ModeEnum.LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONUCTOR:
+      elif self.mode == Qad_lvdb_maptool_ModeEnum.LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONDUCTOR:
          self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
-      elif self.mode == Qad_lvdb_maptool_ModeEnum.DRAW_CONUCTOR_KNOWN_ASK_FOR_FILLING_ATTRIBUTES:
+      elif self.mode == Qad_lvdb_maptool_ModeEnum.DRAW_CONDUCTOR_KNOWN_ASK_FOR_FILLING_ATTRIBUTES:
          self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
       
