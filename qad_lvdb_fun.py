@@ -26,7 +26,6 @@
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from qgis.core import *
-from qgis.core import QgsPointXY
 from qgis.gui import *
 import qgis.utils
 
@@ -63,45 +62,54 @@ def drawConnector(drawConnector=False):
 # ===============================================================================
 # drawReferenceLines
 # ===============================================================================
-def drawReferenceLines(selectedLvdbPoint):
+def drawReferenceLines(entity):
     """
     Docstring
     """
-    angle1 = math.radians(180+(270-275))
-    angle2 = math.radians(270+(180-155))
-    angle3 = math.radians(90-35)
+    if entity.whatIs() == "ENTITY":
+    #     qadGeom = entity.getQadGeom().copy()
+        f = entity.getFeature()
+        g = entity.getGeometry()
+    #     f.setGeometry(fromQadGeomToQgsGeom(qadGeom, entity.crs()))
+    # elif entity.whatIs() == "DIMENTITY":
 
-    lista = [[math.cos(angle1), math.sin(angle1)],
-             [math.cos(angle2), math.sin(angle2)],
-             [math.cos(angle3), math.sin(angle3)]]
+    # angle1 = math.radians(180+(270-275))
+    # angle2 = math.radians(270+(180-155))
+    # angle3 = math.radians(90-35)
 
-    geom = selectedLvdbPoint[0].geometry()
-    point = geom.asMultiPoint()
-    sing_point = point[0].x()
+    # lista = [[math.cos(angle1), math.sin(angle1)],
+    #          [math.cos(angle2), math.sin(angle2)],
+    #          [math.cos(angle3), math.sin(angle3)]]
 
-    for i in range(len(lista)):
-    #point_40 = QgsPointXY(point.x()+cos, point.y()+sin)
-        point_40 = QgsPointXY(point[0].x()+lista[i][0], point[0].y()+lista[i][1])
-        print(point_40)
-        line.setGeometry(QgsGeometry.fromPolylineXY([point[0],point_40]))
+    # geom = selectedLvdbPoint[0].geometry()
+    # point = geom.asMultiPoint()
+    # sing_point = point[0].x()
 
-        #print(geom.asPoint().x())
-        pr.addFeatures([line])
-    lines.triggerRepaint()
+    # for i in range(len(lista)):
+    #     #point_40 = QgsPointXY(point.x()+cos, point.y()+sin)
+    #     point_40 = QgsPointXY(point[0].x()+lista[i]
+    #                           [0], point[0].y()+lista[i][1])
+    #     print(point_40)
+    #     line.setGeometry(QgsGeometry.fromPolylineXY([point[0], point_40]))
 
+    #     # print(geom.asPoint().x())
+    #     pr.addFeatures([line])
+    # lines.triggerRepaint()
 
-
-    return None
+        return print(g)
 # ===============================================================================
 # transformFromCRSToCRS
 # ===============================================================================
 
+
 def transform(self, coordTransform):
-      """Transform this geometry as described by CoordinateTranasform ct."""
-      self.center = coordTransform.transform(self.center)      
+    """Transform this geometry as described by CoordinateTranasform ct."""
+    self.center = coordTransform.transform(self.center)
+
 
 def transformFromCRSToCRS(self, sourceCRS, destCRS):
     """Transform this geometry as described by CRS."""
-    if (sourceCRS is not None) and (destCRS is not None) and sourceCRS != destCRS:       
-        coordTransform = QgsCoordinateTransform(sourceCRS, destCR, QgsProject.instance()) # trasformo le coord
-        self.center =  coordTransform.transform(self.center)
+    if (sourceCRS is not None) and (destCRS is not None) and sourceCRS != destCRS:
+        coordTransform = QgsCoordinateTransform(
+            sourceCRS, destCRS, QgsProject.instance())  # trasformo le coord
+        self.center = coordTransform.transform(self.center)

@@ -39,6 +39,7 @@ from .qad_ssget_cmd import QadSSGetClass
 from ..qad_entity import QadCacheEntitySet, QadEntityTypeEnum, QadCacheEntitySetIterator
 from ..qad_variables import QadVariables
 
+from .. import qad_lvdb_fun
 from .. import qad_utils
 from .. import qad_layer
 from ..qad_dim import QadDimStyles, QadDimEntity, appendDimEntityIfNotExisting
@@ -369,11 +370,7 @@ class QadLVDBCommandClass(QadCommandClass):
         #=========================================================================
         # RISPOSTA ALLA RICHIESTA DEL PUNTO DI SPOSTAMENTO (da step = 2)
         elif self.step == 4: # dopo aver atteso un punto o un numero reale si riavvia il comando
-            if msgMapTool == True: # il punto arriva da una selezione grafica
-                # la condizione seguente si verifica se durante la selezione di un punto
-                # é stato attivato un altro plugin che ha disattivato Qad
-                # quindi stato riattivato il comando che torna qui senza che il maptool
-                # abbia selezionato un punto            
+            if msgMapTool == True:            
                 if self.getPointMapTool().point is None: # il maptool é stato attivato senza un punto
                     if self.getPointMapTool().rightButton == True: # se usato il tasto destro del mouse
                         return True # fine comando
@@ -386,5 +383,8 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = msg
                 self.parameters["drawIncoming"] = value
 
+            entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
+            for entity in entityIterator:
+                qad_lvdb_fun.drawReferenceLines(entity)
             print(self.parameters)
             return True

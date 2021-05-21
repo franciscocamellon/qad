@@ -41,15 +41,15 @@ from ..qad_geom_relations import getQadGeomClosestPart
 #===============================================================================
 class Qad_lvdb_maptool_ModeEnum():
    # si richiede il primo punto per calcolo offset 
-   # NONE_KNOWN_ASK_FOR_BASE_PT = 1     
+   NONE_KNOWN_ASK_FOR_CREATE = 1     
    # noto il primo punto per calcolo offset si richiede il secondo punto
-   ASK_FOR_LV_FUSE_NUMBER = 1     
+   ASK_FOR_LV_FUSE_NUMBER = 2    
    # nota la distanza di offset si richiede il punto per stabilire da che parte
-   FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE = 2
+   FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE = 3
    # si richiede il punto di passaggio per stabilire da che parte e a quale offset
-   LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONDUCTOR = 3
+   LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONDUCTOR = 4
 
-   DRAW_CONDUCTOR_KNOWN_ASK_FOR_FILLING_ATTRIBUTES = 4
+   DRAW_CONDUCTOR_KNOWN_ASK_FOR_FILLING_ATTRIBUTES = 5
 
 #===============================================================================
 # Qad_offset_maptool class
@@ -143,6 +143,11 @@ class Qad_lvdb_maptool(QadGetPoint):
    def setMode(self, mode):
       self.mode = mode
       # si richiede il primo punto per calcolo offset
+      
+      if self.mode == Qad_lvdb_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_CREATE:
+         self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
+         self.setDrawMode(QadGetPointDrawModeEnum.NONE)
+         self.__highlight.reset()
       if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
          self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
@@ -157,33 +162,4 @@ class Qad_lvdb_maptool(QadGetPoint):
          self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
       
-      # # noto il primo punto per calcolo offset si richiede il secondo punto
-      # if self.mode == Qad_lvdb_maptool_ModeEnum.FIRST_OFFSET_PT_KNOWN_ASK_FOR_SECOND_PT:
-      #    self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
-      #    self.setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
-      #    self.setStartPoint(self.firstPt)
-      #    self.onlyEditableLayers = False
-      # # nota la distanza di offset si richiede il punto per stabilire da che parte
-      # elif self.mode == Qad_lvdb_maptool_ModeEnum.OFFSET_KNOWN_ASK_FOR_SIDE_PT:
-      #    self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
-      #    self.setDrawMode(QadGetPointDrawModeEnum.NONE)
-      #    self.onlyEditableLayers = False
-      # # si richiede il punto di passaggio per stabilire da che parte e a quale offset
-      # elif self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_PASSAGE_PT:
-      #    self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
-      #    self.setDrawMode(QadGetPointDrawModeEnum.NONE)
-      #    self.onlyEditableLayers = False
-      # # si richiede la selezione di un oggetto
-      # elif self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_ENTITY_SELECTION:
-      #    self.setSelectionMode(QadGetPointSelectionModeEnum.ENTITY_SELECTION)
-      #    # solo layer lineari o poligono editabili che non appartengano a quote
-      #    layerList = []
-      #    for layer in qad_utils.getVisibleVectorLayers(self.plugIn.canvas): # Tutti i layer vettoriali visibili
-      #       if (layer.geometryType() == QgsWkbTypes.LineGeometry or layer.geometryType() == QgsWkbTypes.PolygonGeometry) and \
-      #          layer.isEditable():
-      #          if len(QadDimStyles.getDimListByLayer(layer)) == 0:
-      #             layerList.append(layer)
-         
-      #    self.layersToCheck = layerList
-      #    self.setDrawMode(QadGetPointDrawModeEnum.NONE)
-      #    self.onlyEditableLayers = True
+      
