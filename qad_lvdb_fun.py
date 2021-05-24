@@ -35,6 +35,10 @@ from . import qad_utils
 from .qad_geom_relations import *
 from .qad_join_fun import selfJoinPolyline
 from .qad_arc import QadArc
+from .qad_point import QadPoint
+from .qad_multi_geom import QadMultiPoint
+from .qad_layer import *
+from .cmd.qad_offset_cmd import QadOFFSETCommandClass as cmd
 
 
 # ===============================================================================
@@ -62,54 +66,52 @@ def drawConnector(drawConnector=False):
 # ===============================================================================
 # drawReferenceLines
 # ===============================================================================
-def drawReferenceLines(entity):
+def drawReferenceLines(entity, angle):
     """
     Docstring
     """
+    line = QgsFeature()
+
     if entity.whatIs() == "ENTITY":
-    #     qadGeom = entity.getQadGeom().copy()
-        f = entity.getFeature()
-        g = entity.getGeometry()
-    #     f.setGeometry(fromQadGeomToQgsGeom(qadGeom, entity.crs()))
+        selfi = QadPoint()
+        # selfii = cmd()
+        canvasCRS = QgsProject.instance().crs().authid()
+        destCRS = QgsCoordinateReferenceSystem(canvasCRS)
+        pointGeom = entity.getGeometry(destCRS)
+        f = pointGeom.asMultiPoint()
+        p = QadPoint.set(selfi, f[0])
+        print(p)
+
     # elif entity.whatIs() == "DIMENTITY":
+        bearingLvFuse = math.radians(angle)
+        bearingRefereceOne = math.radians(155)
+        bearingRefereceTwo = math.radians(275)
+        if angle > 0 and angle< 90:
+            angle1 = math.radians(90-angle)
+            angle2 = math.radians(90-155)
+            angle3 = math.radians(90-275)
+        elif angle > 90 and angle < 180:
+            angle1 = math.radians(180-angle)
+            angle2 = math.radians(180-155)
+            angle3 = math.radians(180-275)
+        elif angle > 180 and angle < 270:
+            angle1 = math.radians(270-angle)
+            angle2 = math.radians(270-155)
+            angle3 = math.radians(270-275)
+        elif angle > 270 and angle < 360:
+            angle1 = math.radians(360-angle)
+            angle2 = math.radians(360-155)
+            angle3 = math.radians(360-275)
 
-    # angle1 = math.radians(180+(270-275))
-    # angle2 = math.radians(270+(180-155))
-    # angle3 = math.radians(90-35)
+        newPoint = QgsPointXY(p.x()+(2.5*math.cos(angle1)), p.y()+(2.5*math.cos(bearingLvFuse)))
+        refPointOne = QgsPointXY(p.x()+(2.5*math.cos(angle2)), p.y()+(2.5*math.cos(bearingRefereceOne)))
+        refPointTwo = QgsPointXY(p.x()+(2.5*math.cos(angle3)), p.y()+(2.5*math.cos(bearingRefereceTwo)))
+    
+        
+        
+        
+          
+        
+        return [[p, newPoint],[p, refPointOne],[p, refPointTwo]]
+    
 
-    # lista = [[math.cos(angle1), math.sin(angle1)],
-    #          [math.cos(angle2), math.sin(angle2)],
-    #          [math.cos(angle3), math.sin(angle3)]]
-
-    # geom = selectedLvdbPoint[0].geometry()
-    # point = geom.asMultiPoint()
-    # sing_point = point[0].x()
-
-    # for i in range(len(lista)):
-    #     #point_40 = QgsPointXY(point.x()+cos, point.y()+sin)
-    #     point_40 = QgsPointXY(point[0].x()+lista[i]
-    #                           [0], point[0].y()+lista[i][1])
-    #     print(point_40)
-    #     line.setGeometry(QgsGeometry.fromPolylineXY([point[0], point_40]))
-
-    #     # print(geom.asPoint().x())
-    #     pr.addFeatures([line])
-    # lines.triggerRepaint()
-
-        return print(g)
-# ===============================================================================
-# transformFromCRSToCRS
-# ===============================================================================
-
-
-def transform(self, coordTransform):
-    """Transform this geometry as described by CoordinateTranasform ct."""
-    self.center = coordTransform.transform(self.center)
-
-
-def transformFromCRSToCRS(self, sourceCRS, destCRS):
-    """Transform this geometry as described by CRS."""
-    if (sourceCRS is not None) and (destCRS is not None) and sourceCRS != destCRS:
-        coordTransform = QgsCoordinateTransform(
-            sourceCRS, destCRS, QgsProject.instance())  # trasformo le coord
-        self.center = coordTransform.transform(self.center)
