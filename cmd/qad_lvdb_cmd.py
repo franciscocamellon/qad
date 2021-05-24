@@ -181,14 +181,17 @@ class QadLVDBCommandClass(QadCommandClass):
     #============================================================================
     # addFeatureCache
     #============================================================================
-    def addFeatureCache(self, entity):
+    def addFeatureCache(self, entity, reference=True):
         featureCacheLen = len(self.featureCache)
         layer = getLayersByName('LV_OH_Conductor')
         layer[0].startEditing()
         f = entity.getFeature()
-       
-        refLineList = qad_lvdb_fun.drawReferenceLines(entity, int(f['lvdb_angle']))
-        print(refLineList)
+
+        if reference:
+            refLineList = qad_lvdb_fun.drawReferenceLines(entity)
+        else:
+            refLineList = qad_lvdb_fun.drawLvFuses(self.basePoint, self.parameters["lvdbAngle"], 'Yes')
+
         added = False
         for line in refLineList:
             refLineGeom = QgsGeometry.fromPolylineXY(line)
@@ -282,6 +285,7 @@ class QadLVDBCommandClass(QadCommandClass):
 
             entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
             for entity in entityIterator:
+                self.basePoint = entity
                 self.addFeatureCache(entity)
             #     qad_layer.addLineToLayer(self.plugIn, conductor[0], a)
             # print(self.parameters)
@@ -468,6 +472,9 @@ class QadLVDBCommandClass(QadCommandClass):
             else: # il punto arriva come parametro della funzione
                 value = msg
                 self.parameters["drawIncoming"] = value
+            if value == 'Yes':
+                self.addFeatureCache(self.entity, False)
+                # self.undoGeomsInCache()
             if value == 'No':
                 self.undoGeomsInCache()
             

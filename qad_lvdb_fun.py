@@ -44,74 +44,103 @@ from .cmd.qad_offset_cmd import QadOFFSETCommandClass as cmd
 # ===============================================================================
 # drawLvFuses
 # ===============================================================================
-def drawLvFuses(feature, angle, lvFuseNumber):
-    """
-    Docstring
-    """
+def drawLvFuses(entity, lvdbAngle, choice):
+    line = QgsFeature()
+    fuseLine = list()
 
-    return None
+    if entity.whatIs() == "ENTITY":
+        canvasCRS = QgsProject.instance().crs().authid()
+        destCRS = QgsCoordinateReferenceSystem(canvasCRS)
+        pointGeom = entity.getGeometry(destCRS)
+        fusePoint = pointGeom.asMultiPoint()
+        lvdbAngleRad = math.radians(90-lvdbAngle)
+        lista = [1.5*(math.cos(lvdbAngleRad)), 1.5*(math.sin(lvdbAngleRad))]
+
+        newPoint = QgsPointXY(fusePoint[0].x()+lista[0], fusePoint[0].y()+lista[1])
+        fuseLine.append([fusePoint[0],newPoint])
+    return fuseLine
 
 
 # ===============================================================================
 # drawConnector
 # ===============================================================================
-def drawConnector(drawConnector=False):
+def drawConnector(entity, fusesToDraw, drawConnector=False):
     """
     Docstring
     """
+    intervalAngle = math.radians(120 / fusesToDraw)
+    refAngle = math.radians(450-155)
 
-    return None
+    for fuse in range(fusesToDraw):
+
+
+
+
+        return None
+
+
+# def createRefAngleList(angle, point):
+#     refAngleList = list()
+#     bearingLvFuse = math.radians(angle)
+#     bearingRefereceOne = math.radians(155)
+#     bearingRefereceTwo = math.radians(275)
+#     for quadrant in [90, 180, 270, 360]:
+#         if angle == quadrant:
+
+#     if angle > 0 and angle < 90:
+#         angle1 = math.radians(90-angle)
+#         angle2 = math.radians(90-155)
+#         angle3 = math.radians(90-275)
+#         newPoint = QgsPointXY(point.x()+(2.5*math.cos(angle1)),
+#                               point.y()+(2.5*math.cos(bearingLvFuse)))
+#         refPointOne = QgsPointXY(
+#             point.x()+(2.5*math.cos(angle2)), point.y()+(2.5*math.cos(bearingRefereceOne)))
+#         refPointTwo = QgsPointXY(
+#             point.x()+(2.5*math.cos(angle3)), point.y()+(2.5*math.cos(bearingRefereceTwo)))
+#     elif angle > 90 and angle < 180:
+#         angle1 = math.radians(180-angle)
+#         angle2 = math.radians(180-155)
+#         angle3 = math.radians(180-275)
+#     elif angle > 180 and angle < 270:
+#         angle1 = math.radians(270-angle)
+#         angle2 = math.radians(270-155)
+#         angle3 = math.radians(270-275)
+#     elif angle > 270 and angle < 360:
+#         angle1 = math.radians(360-angle)
+#         angle2 = math.radians(360-155)
+#         angle3 = math.radians(360-275)
 
 
 # ===============================================================================
 # drawReferenceLines
 # ===============================================================================
-def drawReferenceLines(entity, angle):
+def drawReferenceLines(entity):
     """
     Docstring
     """
     line = QgsFeature()
+    refLinesList = list()
 
     if entity.whatIs() == "ENTITY":
         selfi = QadPoint()
-        # selfii = cmd()
+
         canvasCRS = QgsProject.instance().crs().authid()
         destCRS = QgsCoordinateReferenceSystem(canvasCRS)
         pointGeom = entity.getGeometry(destCRS)
         f = pointGeom.asMultiPoint()
         p = QadPoint.set(selfi, f[0])
-        print(p)
 
-    # elif entity.whatIs() == "DIMENTITY":
-        bearingLvFuse = math.radians(angle)
-        bearingRefereceOne = math.radians(155)
-        bearingRefereceTwo = math.radians(275)
-        if angle > 0 and angle< 90:
-            angle1 = math.radians(90-angle)
-            angle2 = math.radians(90-155)
-            angle3 = math.radians(90-275)
-        elif angle > 90 and angle < 180:
-            angle1 = math.radians(180-angle)
-            angle2 = math.radians(180-155)
-            angle3 = math.radians(180-275)
-        elif angle > 180 and angle < 270:
-            angle1 = math.radians(270-angle)
-            angle2 = math.radians(270-155)
-            angle3 = math.radians(270-275)
-        elif angle > 270 and angle < 360:
-            angle1 = math.radians(360-angle)
-            angle2 = math.radians(360-155)
-            angle3 = math.radians(360-275)
+        angle1 = math.radians(180+(270-275))
+        angle2 = math.radians(270+(180-155))
+        angle3 = math.radians(90)
+        lista = [
+            [2.5*(math.cos(angle1)), 2.5*(math.sin(angle1))],
+            [2.5*(math.cos(angle2)), 2.5*(math.sin(angle2))],
+            [2.5*(math.cos(angle3)), 2.5*(math.sin(angle3))]
+            ]
 
-        newPoint = QgsPointXY(p.x()+(2.5*math.cos(angle1)), p.y()+(2.5*math.cos(bearingLvFuse)))
-        refPointOne = QgsPointXY(p.x()+(2.5*math.cos(angle2)), p.y()+(2.5*math.cos(bearingRefereceOne)))
-        refPointTwo = QgsPointXY(p.x()+(2.5*math.cos(angle3)), p.y()+(2.5*math.cos(bearingRefereceTwo)))
-    
-        
-        
-        
-          
-        
-        return [[p, newPoint],[p, refPointOne],[p, refPointTwo]]
-    
-
+        for i in range(len(lista)):
+            newPoint = QgsPointXY(p.x()+lista[i][0], p.y()+lista[i][1])
+            refLinesList.append([p,newPoint])
+            
+        return refLinesList
