@@ -28,7 +28,7 @@ import re
 # Import the PyQt and QGIS libraries
 from qgis.PyQt.QtGui import *
 from qgis.utils import iface
-from qgis.core import Qgis, QgsProject, QgsWkbTypes, QgsPointXY
+from qgis.core import Qgis, QgsProject, QgsWkbTypes, QgsPointXY, QgsGeometry, QgsFeature
 
 from .qad_lvdb_maptool import Qad_lvdb_maptool, Qad_lvdb_maptool_ModeEnum
 from .qad_generic_cmd import QadCommandClass
@@ -36,7 +36,7 @@ from ..qad_msg import QadMsg
 from ..qad_getpoint import QadGetPointDrawModeEnum
 from ..qad_textwindow import QadInputModeEnum, QadInputTypeEnum
 from .qad_ssget_cmd import QadSSGetClass
-from ..qad_entity import QadCacheEntitySet, QadEntityTypeEnum, QadCacheEntitySetIterator
+from ..qad_entity import QadCacheEntitySet, QadEntityTypeEnum, QadCacheEntitySetIterator, QadEntity
 from ..qad_variables import QadVariables
 
 from .. import qad_lvdb_fun
@@ -45,6 +45,7 @@ from .. import qad_layer
 from ..qad_dim import QadDimStyles, QadDimEntity, appendDimEntityIfNotExisting
 from ..qad_multi_geom import fromQadGeomToQgsGeom
 from ..qad_layer import getLayersByName, getCurrLayerEditable
+from ..qad_rubberband import createRubberBand
 
 
 # Classe che gestisce il comando VSETUP
@@ -73,6 +74,7 @@ class QadLVDBCommandClass(QadCommandClass):
     def __init__(self, plugIn):
         QadCommandClass.__init__(self, plugIn)
         self.iface = self.plugIn.iface
+        self.entity = QadEntity()
         self.targetLayer = 'LVDB-FP'
         self.lvFuseCount = 0
         self.parameters = dict()
@@ -82,6 +84,9 @@ class QadLVDBCommandClass(QadCommandClass):
         self.SSGetClass.onlyEditableLayers = True
         self.cacheEntitySet = QadCacheEntitySet()
         self.basePt = QgsPointXY()
+        self.featureCache = []
+        self.undoFeatureCacheIndexes = []
+        self.rubberBand = createRubberBand(self.plugIn.canvas, QgsWkbTypes.LineGeometry)
 
     def __del__(self):
         QadCommandClass.__del__(self)
@@ -172,6 +177,80 @@ class QadLVDBCommandClass(QadCommandClass):
     # END FUNCTIONS
     # ============================================================================
 
+
+    #============================================================================
+    # addFeatureCache
+    #============================================================================
+    def addFeatureCache(self, entity):
+        featureCacheLen = len(self.featureCache)
+        layer = getLayersByName('LV_OH_Conductor')
+        layer[0].startEditing()
+        f = entity.getFeature()
+       
+        refLineList = qad_lvdb_fun.drawReferenceLines(entity, int(f['lvdb_angle']))
+        print(refLineList)
+        added = False
+        for line in refLineList:
+            refLineGeom = QgsGeometry.fromPolylineXY(line)
+
+            if refLineGeom.type() == QgsWkbTypes.LineGeometry:
+                refLineFeat = QgsFeature()
+                # trasformo la geometria nel crs del layer
+                refLineFeat.setGeometry(self.mapToLayerCoordinates(layer[0], refLineGeom))
+                self.featureCache.append([layer[0], refLineFeat])
+                self.addFeatureToRubberBand(layer[0], refLineFeat)            
+                added = True           
+
+        if added:      
+            self.undoFeatureCacheIndexes.append(featureCacheLen)
+
+
+    #============================================================================
+    # undoGeomsInCache
+    #============================================================================
+    def undoGeomsInCache(self):
+        tot = len(self.featureCache)
+        if tot > 0:
+            iEnd = self.undoFeatureCacheIndexes[-1]
+            i = tot - 1
+            
+            del self.undoFeatureCacheIndexes[-1] # cancello ultimo undo
+            while i >= iEnd:
+                del self.featureCache[-1] # cancello feature
+                i = i - 1
+            self.refreshRubberBand()
+
+                
+    #============================================================================
+    # addFeatureToRubberBand
+    #============================================================================
+    def addFeatureToRubberBand(self, layer, feature):
+        if layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+            if feature.geometry().type() == QgsWkbTypes.PolygonGeometry:
+                self.rubberBandPolygon.addGeometry(feature.geometry(), layer)
+            else:
+                self.rubberBand.addGeometry(feature.geometry(), layer)
+        else:
+            self.rubberBand.addGeometry(feature.geometry(), layer)
+        
+        
+    #============================================================================
+    # refreshRubberBand
+    #============================================================================
+    def refreshRubberBand(self):
+        self.rubberBand.reset(QgsWkbTypes.LineGeometry)
+        for f in self.featureCache:
+            layer = f[0]
+            feature = f[1]
+            if layer.geometryType() == QgsWkbTypes.LineGeometry:
+                if feature.geometry().type() == QgsWkbTypes.LineGeometry:
+                    self.rubberBand.addGeometry(feature.geometry(), layer)
+            
+
+
+
+
+
     def run(self, msgMapTool=False, msg=None):
         if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
             self.showMsg(QadMsg.translate(
@@ -200,7 +279,12 @@ class QadLVDBCommandClass(QadCommandClass):
             if self.SSGetClass.entitySet.count() == 0:
                 return True  # fine comando
             self.cacheEntitySet.appendEntitySet(self.SSGetClass.entitySet)
-            print(self.cacheEntitySet.getLayerList())
+
+            entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
+            for entity in entityIterator:
+                self.addFeatureCache(entity)
+            #     qad_layer.addLineToLayer(self.plugIn, conductor[0], a)
+            # print(self.parameters)
 
             # imposto il map tool
             self.getPointMapTool().cacheEntitySet = self.cacheEntitySet
@@ -248,8 +332,10 @@ class QadLVDBCommandClass(QadCommandClass):
             else:  # il punto arriva come parametro della funzione
                 value = msg
                 self.parameters["lvFuseToDraw"] = value
+                
 
             if value is None or type(value) == unicode:
+                
                 self.basePt.set(0, 0)
                 self.getPointMapTool().basePt = self.basePt
                 self.getPointMapTool().setMode(
@@ -382,9 +468,7 @@ class QadLVDBCommandClass(QadCommandClass):
             else: # il punto arriva come parametro della funzione
                 value = msg
                 self.parameters["drawIncoming"] = value
-
-            entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
-            for entity in entityIterator:
-                qad_lvdb_fun.drawReferenceLines(entity)
-            print(self.parameters)
+            if value == 'No':
+                self.undoGeomsInCache()
+            
             return True
