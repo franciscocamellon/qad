@@ -44,8 +44,7 @@ from .cmd.qad_offset_cmd import QadOFFSETCommandClass as cmd
 # ===============================================================================
 # drawLvFuses
 # ===============================================================================
-def drawLvFuses(entity, lvdbAngle, choice):
-    line = QgsFeature()
+def drawInConductor(entity, lvdbAngle):
     fuseLine = list()
 
     if entity.whatIs() == "ENTITY":
@@ -64,19 +63,26 @@ def drawLvFuses(entity, lvdbAngle, choice):
 # ===============================================================================
 # drawConnector
 # ===============================================================================
-def drawConnector(entity, fusesToDraw, drawConnector=False):
+def drawOutConductor(entity, fusesToDraw):
     """
     Docstring
     """
-    intervalAngle = math.radians(120 / fusesToDraw)
-    refAngle = math.radians(450-155)
+    outConductor = list()
+    intervalAngle = 120 / fusesToDraw
+    refAngle = 450-155
 
-    for fuse in range(fusesToDraw):
+    if entity.whatIs() == "ENTITY":
+        canvasCRS = QgsProject.instance().crs().authid()
+        destCRS = QgsCoordinateReferenceSystem(canvasCRS)
+        pointGeom = entity.getGeometry(destCRS)
+        outPoint = pointGeom.asMultiPoint()[0]
+            
+        for fuse in range(fusesToDraw):
+            newPoint = QgsPointXY(outPoint.x()+1.5*(math.cos(math.radians(refAngle))), outPoint.y()+1.5*(math.sin(math.radians(refAngle))))
+            outConductor.append([outPoint, newPoint])
+            refAngle -= intervalAngle
 
-
-
-
-        return None
+        return outConductor
 
 
 # def createRefAngleList(angle, point):
@@ -131,7 +137,9 @@ def drawReferenceLines(entity):
         p = QadPoint.set(selfi, f[0])
 
         angle1 = math.radians(180+(270-275))
+        print(angle1)
         angle2 = math.radians(270+(180-155))
+        print(angle2)
         angle3 = math.radians(90)
         lista = [
             [2.5*(math.cos(angle1)), 2.5*(math.sin(angle1))],

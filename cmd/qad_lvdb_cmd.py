@@ -181,16 +181,18 @@ class QadLVDBCommandClass(QadCommandClass):
     #============================================================================
     # addFeatureCache
     #============================================================================
-    def addFeatureCache(self, entity, reference=True):
+    def addFeatureCache(self, entity, lineType):
         featureCacheLen = len(self.featureCache)
         layer = getLayersByName('LV_OH_Conductor')
         layer[0].startEditing()
         f = entity.getFeature()
 
-        if reference:
+        if lineType == 'ref':
             refLineList = qad_lvdb_fun.drawReferenceLines(entity)
-        else:
-            refLineList = qad_lvdb_fun.drawLvFuses(self.basePoint, self.parameters["lvdbAngle"], 'Yes')
+        elif lineType == 'in':
+            refLineList = qad_lvdb_fun.drawInConductor(self.basePoint, self.parameters["lvdbAngle"])
+        elif lineType == 'out':
+            refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"])
 
         added = False
         for line in refLineList:
@@ -286,7 +288,7 @@ class QadLVDBCommandClass(QadCommandClass):
             entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
             for entity in entityIterator:
                 self.basePoint = entity
-                self.addFeatureCache(entity)
+                self.addFeatureCache(entity, 'ref')
             #     qad_layer.addLineToLayer(self.plugIn, conductor[0], a)
             # print(self.parameters)
 
@@ -335,7 +337,11 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = self.getPointMapTool().point
             else:  # il punto arriva come parametro della funzione
                 value = msg
-                self.parameters["lvFuseToDraw"] = value
+                self.parameters["lvFuseToDraw"] = int(value)
+                self.undoGeomsInCache()
+                self.addFeatureCache(self.entity, 'out')
+
+
                 
 
             if value is None or type(value) == unicode:
@@ -473,7 +479,7 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = msg
                 self.parameters["drawIncoming"] = value
             if value == 'Yes':
-                self.addFeatureCache(self.entity, False)
+                self.addFeatureCache(self.entity, 'in')
                 # self.undoGeomsInCache()
             if value == 'No':
                 self.undoGeomsInCache()
