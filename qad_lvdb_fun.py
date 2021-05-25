@@ -85,47 +85,27 @@ def drawOutConductor(entity, fusesToDraw):
         return outConductor
 
 
-# def createRefAngleList(angle, point):
-#     refAngleList = list()
-#     bearingLvFuse = math.radians(angle)
-#     bearingRefereceOne = math.radians(155)
-#     bearingRefereceTwo = math.radians(275)
-#     for quadrant in [90, 180, 270, 360]:
-#         if angle == quadrant:
+def getReversedLvdbAngle(lvdbAngle):
+    cartesianAngle = 450 - lvdbAngle
+    if lvdbAngle < 180:
+        reverseLvdbAngle = lvdbAngle + 180
+    elif lvdbAngle > 180:
+        reverseLvdbAngle = lvdbAngle - 180
+    return reverseLvdbAngle
 
-#     if angle > 0 and angle < 90:
-#         angle1 = math.radians(90-angle)
-#         angle2 = math.radians(90-155)
-#         angle3 = math.radians(90-275)
-#         newPoint = QgsPointXY(point.x()+(2.5*math.cos(angle1)),
-#                               point.y()+(2.5*math.cos(bearingLvFuse)))
-#         refPointOne = QgsPointXY(
-#             point.x()+(2.5*math.cos(angle2)), point.y()+(2.5*math.cos(bearingRefereceOne)))
-#         refPointTwo = QgsPointXY(
-#             point.x()+(2.5*math.cos(angle3)), point.y()+(2.5*math.cos(bearingRefereceTwo)))
-#     elif angle > 90 and angle < 180:
-#         angle1 = math.radians(180-angle)
-#         angle2 = math.radians(180-155)
-#         angle3 = math.radians(180-275)
-#     elif angle > 180 and angle < 270:
-#         angle1 = math.radians(270-angle)
-#         angle2 = math.radians(270-155)
-#         angle3 = math.radians(270-275)
-#     elif angle > 270 and angle < 360:
-#         angle1 = math.radians(360-angle)
-#         angle2 = math.radians(360-155)
-#         angle3 = math.radians(360-275)
 
 
 # ===============================================================================
 # drawReferenceLines
 # ===============================================================================
-def drawReferenceLines(entity):
+def drawReferenceLines(entity, lvdbAngle):
     """
     Docstring
     """
     line = QgsFeature()
     refLinesList = list()
+    reverseLvdbAngle = getReversedLvdbAngle(lvdbAngle)
+    print('reverseLvdbAngle: ',reverseLvdbAngle)
 
     if entity.whatIs() == "ENTITY":
         selfi = QadPoint()
@@ -136,15 +116,21 @@ def drawReferenceLines(entity):
         f = pointGeom.asMultiPoint()
         p = QadPoint.set(selfi, f[0])
 
-        angle1 = math.radians(180+(270-275))
-        print(angle1)
-        angle2 = math.radians(270+(180-155))
-        print(angle2)
-        angle3 = math.radians(90)
+       
+
+
+        firstRefAngle = 450-(lvdbAngle + 150)
+        print('firstRefAngle: ',firstRefAngle)
+        firstRefAngleRad = math.radians(firstRefAngle)
+        lastRefAngle = 450-(lvdbAngle + 210)
+        print('lastRefAngle: ',lastRefAngle)
+        lastRefAngleRad = math.radians(lastRefAngle)
+        print('lvdbAngle: ',450-lvdbAngle)
+        lvdbAngleRad = math.radians(450 - lvdbAngle)
         lista = [
-            [2.5*(math.cos(angle1)), 2.5*(math.sin(angle1))],
-            [2.5*(math.cos(angle2)), 2.5*(math.sin(angle2))],
-            [2.5*(math.cos(angle3)), 2.5*(math.sin(angle3))]
+            [1.5*(math.cos(firstRefAngleRad)), 1.5*(math.sin(firstRefAngleRad))],
+            [1.5*(math.cos(lastRefAngleRad)), 1.5*(math.sin(lastRefAngleRad))],
+            [2.5*(math.cos(lvdbAngleRad)), 2.5*(math.sin(lvdbAngleRad))]
             ]
 
         for i in range(len(lista)):

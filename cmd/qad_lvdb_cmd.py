@@ -171,7 +171,7 @@ class QadLVDBCommandClass(QadCommandClass):
         selectedFeature = self.isFeatureSelected()
         if selectedFeature:
             angleField = selectedFeature[0]["lvdb_angle"]
-        return angleField
+        return int(angleField)
 
     # ============================================================================
     # END FUNCTIONS
@@ -186,9 +186,10 @@ class QadLVDBCommandClass(QadCommandClass):
         layer = getLayersByName('LV_OH_Conductor')
         layer[0].startEditing()
         f = entity.getFeature()
+        angle = self.getLvdbAngle()
 
         if lineType == 'ref':
-            refLineList = qad_lvdb_fun.drawReferenceLines(entity)
+            refLineList = qad_lvdb_fun.drawReferenceLines(entity, angle)
         elif lineType == 'in':
             refLineList = qad_lvdb_fun.drawInConductor(self.basePoint, self.parameters["lvdbAngle"])
         elif lineType == 'out':
@@ -351,10 +352,10 @@ class QadLVDBCommandClass(QadCommandClass):
                 self.getPointMapTool().setMode(
                     Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE)
 
-                lvdbAngle = self.getLvdbAngle()
+                lvdbAngleStr = str(self.getLvdbAngle())
                 keyWords = QadMsg.translate(
-                    "Command_LVDB", lvdbAngle) + "/" + QadMsg.translate("Command_LVDB", "Insert")
-                default = QadMsg.translate("Command_OFFSET", lvdbAngle)
+                    "Command_LVDB", lvdbAngleStr) + "/" + QadMsg.translate("Command_LVDB", "Insert")
+                default = QadMsg.translate("Command_OFFSET", lvdbAngleStr)
                 prompt = QadMsg.translate(
                     "Command_LVDB", "Insert the angle of lvdb-fp or auto fill [{0}] <{1}>: ").format(keyWords, default)
 
