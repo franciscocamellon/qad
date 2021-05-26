@@ -193,7 +193,9 @@ class QadLVDBCommandClass(QadCommandClass):
         elif lineType == 'in':
             refLineList = qad_lvdb_fun.drawInConductor(self.basePoint, self.parameters["lvdbAngle"])
         elif lineType == 'out':
-            refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"])
+            refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"], angle)
+            # refLineList = qad_lvdb_fun.drawRefOutConductor(self.basePoint, angle)
+            
 
         added = False
         for line in refLineList:
