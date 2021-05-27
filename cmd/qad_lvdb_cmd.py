@@ -355,7 +355,7 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = msg
                 self.parameters["lvFuseToDraw"] = int(value)
                 self.undoGeomsInCache()
-                self.addFeatureCache(self.entity, 'out')
+                self.addFeatureCache(self.entity, 'out') 
                 self.addFromRubberbandToLayer()
                 self.undoGeomsInCache()
 
