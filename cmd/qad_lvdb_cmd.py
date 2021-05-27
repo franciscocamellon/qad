@@ -183,7 +183,7 @@ class QadLVDBCommandClass(QadCommandClass):
     #============================================================================
     def addFeatureCache(self, entity, lineType):
         featureCacheLen = len(self.featureCache)
-        layer = getLayersByName('LV_OH_Conductor')
+        layer = getLayersByName('LV_UG_Conductor')
         layer[0].startEditing()
         f = entity.getFeature()
         angle = self.getLvdbAngle()
@@ -254,6 +254,19 @@ class QadLVDBCommandClass(QadCommandClass):
                 if feature.geometry().type() == QgsWkbTypes.LineGeometry:
                     self.rubberBand.addGeometry(feature.geometry(), layer)
             
+    def addFromRubberbandToLayer(self):
+        layer = getLayersByName('LV_UG_Conductor')[0]
+        provider = layer.dataProvider()
+        line = QgsFeature()
+        lista = list()
+        for f in self.featureCache:
+            lista.append(f[1])
+            # layer = f[0]
+            # feature = f[1]
+        provider.addFeatures(lista)
+        
+        layer.triggerRepaint()
+        self.undoGeomsInCache()
 
 
 
@@ -343,6 +356,8 @@ class QadLVDBCommandClass(QadCommandClass):
                 self.parameters["lvFuseToDraw"] = int(value)
                 self.undoGeomsInCache()
                 self.addFeatureCache(self.entity, 'out')
+                self.addFromRubberbandToLayer()
+                self.undoGeomsInCache()
 
 
                 
@@ -482,8 +497,10 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = msg
                 self.parameters["drawIncoming"] = value
             if value == 'Yes':
+                self.undoGeomsInCache()
                 self.addFeatureCache(self.entity, 'in')
-                # self.undoGeomsInCache()
+                self.addFromRubberbandToLayer()
+                self.undoGeomsInCache()
             if value == 'No':
                 self.undoGeomsInCache()
             
