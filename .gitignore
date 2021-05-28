@@ -176,7 +176,6 @@ cmd/__pycache__/qad_undoredo_cmd.cpython-37.pyc
 cmd/__pycache__/qad_vsetup_cmd.cpython-37.pyc
 cmd/__pycache__/qad_lvdb_cmd.cpython-37.pyc
 .vscode/settings.json
-<<<<<<< HEAD
 __pycache__/__init__.cpython-37.pyc
 __pycache__/qad_arc.cpython-37.pyc
 __pycache__/qad_array_fun.cpython-37.pyc
@@ -312,7 +311,4 @@ cmd/__pycache__/qad_stretch_maptool.cpython-37.pyc
 cmd/__pycache__/qad_text_cmd.cpython-37.pyc
 cmd/__pycache__/qad_trim_cmd.cpython-37.pyc
 cmd/__pycache__/qad_undoredo_cmd.cpython-37.pyc
-=======
-.vscode/settings.json
->>>>>>> cbe6d9d3ae209f0eea42fd014f3f188ccb191e25
 .vscode/settings.json
