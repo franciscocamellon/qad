@@ -137,6 +137,43 @@ def drawOutConductor(entity, fusesToDraw, lvdbAngle):
 
     return outConductor
 
+def drawOutConductor2(entity, fusesToDraw, lvdbAngle):
+    """
+    Docstring
+    """
+    outConductor = list()
+    outPoint = getPointFromEntity(entity)
+    reversedLvdbAngle = getReversedLvdbAngle(lvdbAngle)
+
+    firstPoint = drawRefOutConductor(entity, lvdbAngle)
+    outConductor.append([outPoint, firstPoint])
+
+    fromLeft = (fusesToDraw - 1) // 2
+    fromRight = (fusesToDraw - 1) - fromLeft
+    
+    refAngle = getArcCossinus()
+    refDist = 0.15 * math.sqrt(2)
+
+    for fuse in range(fromLeft):
+        if reversedLvdbAngle > 0 and reversedLvdbAngle < 180:
+            newPoint = QgsPointXY(firstPoint.x(), firstPoint.y() + refDist)
+            outConductor.append([outPoint, newPoint])
+        elif reversedLvdbAngle > 180 and reversedLvdbAngle < 360:
+            newPoint = QgsPointXY(firstPoint.x(), firstPoint.y() + refDist)
+            outConductor.append([outPoint, newPoint])
+
+    lvdbAngleRad = math.radians(getReversedLvdbAngle(lvdbAngle))
+
+    for fuse in range(fromRight):
+        if reversedLvdbAngle > 0 and reversedLvdbAngle < 180:
+            newPoint = QgsPointXY(firstPoint.x(), firstPoint.y() + refDist)
+            outConductor.append([outPoint, newPoint])
+        elif reversedLvdbAngle > 180 and reversedLvdbAngle < 360:
+            newPoint = QgsPointXY(firstPoint.x(), firstPoint.y() + refDist)
+            outConductor.append([outPoint, newPoint])
+
+    return outConductor
+
 # ===============================================================================
 # getPointFromEntity
 # ===============================================================================
@@ -220,9 +257,45 @@ def getPointFromCartesianQuadrant(lvdbAngleRad, point):
         print('newpoint 360: ', newPoint)
     return newPoint
 
+def vectorMagnitude(point):
+    magnitude = math.sqrt(point.x()**2 + point.y()**2)
+    return magnitude
+
+def vectorDifference(pointA, pointB):
+    differencePoint = QgsPointXY(pointA.x() - pointB.x(), pointA.y() - pointB.y())
+    return differencePoint
+
+def vectorLength(pointA, pointB):
+    length = math.sqrt(pointB.sqrDist(pointA))
+    return length
+
+def directionCosines(point):
+    cosA = point.x()/vectorMagnitude(point)
+    cosB = point.y()/vectorMagnitude(point)
+    return cosA, cosB
+
+def pairs(lista):
+    for i in range(1, len(lista)):
+        yield lista[i-1], lista[i]
+
+def createPoints(refLineList):
+    interval = 0.3
+    pointList = list()
+
+    for line in refLineList:
+        print(line)
+        lineGeom = line.geom()
+        for segStart, segEnd in pairs(lineGeom.asPolylineXY()):
+            lineStart = QgsPointXY(segStart)
+            lineEnd = QgsPointXY(segEnd)
+            pointM = vectorDifference(lineEnd, lineStart)
+            cosA, cosB = directionCosines(pointM)
+            length = vectorLength(lineEnd, lineStart)
+            for i in range(interval, length, interval):
+                newPoint = QgsPointXY(lineStart.x()  + (i * cosA), lineStart.y() + (i*cosB))
+                pointList.append(newPoint)
+    print(pointList)
+    return pointList
 
 
 
-
-
-    

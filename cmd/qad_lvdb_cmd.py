@@ -86,7 +86,8 @@ class QadLVDBCommandClass(QadCommandClass):
         self.basePt = QgsPointXY()
         self.featureCache = []
         self.undoFeatureCacheIndexes = []
-        self.rubberBand = createRubberBand(self.plugIn.canvas, QgsWkbTypes.LineGeometry)
+        self.rubberBand = createRubberBand(
+            self.plugIn.canvas, QgsWkbTypes.LineGeometry)
 
     def __del__(self):
         QadCommandClass.__del__(self)
@@ -156,7 +157,7 @@ class QadLVDBCommandClass(QadCommandClass):
                 if lvFuse == 'CLOSED:':
                     self.lvFuseCount += 1
             self.lvFuseCount += 1
-            return range(1,self.lvFuseCount)
+            return range(1, self.lvFuseCount)
 
     def getClosedLV(self, attribute):
         try:
@@ -177,10 +178,10 @@ class QadLVDBCommandClass(QadCommandClass):
     # END FUNCTIONS
     # ============================================================================
 
-
-    #============================================================================
+    # ============================================================================
     # addFeatureCache
-    #============================================================================
+    # ============================================================================
+
     def addFeatureCache(self, entity, lineType):
         featureCacheLen = len(self.featureCache)
         layer = getLayersByName('LV_UG_Conductor')
@@ -191,11 +192,14 @@ class QadLVDBCommandClass(QadCommandClass):
         if lineType == 'ref':
             refLineList = qad_lvdb_fun.drawReferenceLines(entity, angle)
         elif lineType == 'in':
-            refLineList = qad_lvdb_fun.drawInConductor(self.basePoint, self.parameters["lvdbAngle"])
+            refLineList = qad_lvdb_fun.drawInConductor(
+                self.basePoint, self.parameters["lvdbAngle"])
         elif lineType == 'out':
-            refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"], angle)
+            # refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"], angle)
+            refLineList = qad_lvdb_fun.drawOutConductor2(
+                self.basePoint, self.parameters["lvFuseToDraw"], angle)
+
             # refLineList = qad_lvdb_fun.drawRefOutConductor(self.basePoint, angle)
-            
 
         added = False
         for line in refLineList:
@@ -204,34 +208,36 @@ class QadLVDBCommandClass(QadCommandClass):
             if refLineGeom.type() == QgsWkbTypes.LineGeometry:
                 refLineFeat = QgsFeature()
                 # trasformo la geometria nel crs del layer
-                refLineFeat.setGeometry(self.mapToLayerCoordinates(layer[0], refLineGeom))
-                self.featureCache.append([layer[0], refLineFeat])
-                self.addFeatureToRubberBand(layer[0], refLineFeat)            
-                added = True           
+                refLineFeat.setGeometry(
+                    self.mapToLayerCoordinates(layer[0], refLineGeom))
 
-        if added:      
+                self.featureCache.append([layer[0], refLineFeat])
+                self.addFeatureToRubberBand(layer[0], refLineFeat)
+                added = True
+
+        if added:
             self.undoFeatureCacheIndexes.append(featureCacheLen)
 
-
-    #============================================================================
+    # ============================================================================
     # undoGeomsInCache
-    #============================================================================
+    # ============================================================================
+
     def undoGeomsInCache(self):
         tot = len(self.featureCache)
         if tot > 0:
             iEnd = self.undoFeatureCacheIndexes[-1]
             i = tot - 1
-            
-            del self.undoFeatureCacheIndexes[-1] # cancello ultimo undo
+
+            del self.undoFeatureCacheIndexes[-1]  # cancello ultimo undo
             while i >= iEnd:
-                del self.featureCache[-1] # cancello feature
+                del self.featureCache[-1]  # cancello feature
                 i = i - 1
             self.refreshRubberBand()
 
-                
-    #============================================================================
+    # ============================================================================
     # addFeatureToRubberBand
-    #============================================================================
+    # ============================================================================
+
     def addFeatureToRubberBand(self, layer, feature):
         if layer.geometryType() == QgsWkbTypes.PolygonGeometry:
             if feature.geometry().type() == QgsWkbTypes.PolygonGeometry:
@@ -240,11 +246,11 @@ class QadLVDBCommandClass(QadCommandClass):
                 self.rubberBand.addGeometry(feature.geometry(), layer)
         else:
             self.rubberBand.addGeometry(feature.geometry(), layer)
-        
-        
-    #============================================================================
+
+    # ============================================================================
     # refreshRubberBand
-    #============================================================================
+    # ============================================================================
+
     def refreshRubberBand(self):
         self.rubberBand.reset(QgsWkbTypes.LineGeometry)
         for f in self.featureCache:
@@ -253,7 +259,7 @@ class QadLVDBCommandClass(QadCommandClass):
             if layer.geometryType() == QgsWkbTypes.LineGeometry:
                 if feature.geometry().type() == QgsWkbTypes.LineGeometry:
                     self.rubberBand.addGeometry(feature.geometry(), layer)
-            
+
     def addFromRubberbandToLayer(self):
         layer = getLayersByName('LV_UG_Conductor')[0]
         provider = layer.dataProvider()
@@ -261,16 +267,13 @@ class QadLVDBCommandClass(QadCommandClass):
         lista = list()
         for f in self.featureCache:
             lista.append(f[1])
+            qad_lvdb_fun.createPoints([f[1]])
             # layer = f[0]
             # feature = f[1]
         provider.addFeatures(lista)
-        
+
         layer.triggerRepaint()
         self.undoGeomsInCache()
-
-
-
-
 
     def run(self, msgMapTool=False, msg=None):
         if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
@@ -307,18 +310,19 @@ class QadLVDBCommandClass(QadCommandClass):
                 self.addFeatureCache(entity, 'ref')
             #     qad_layer.addLineToLayer(self.plugIn, conductor[0], a)
             # print(self.parameters)
+            self.addFromRubberbandToLayer()
 
             # imposto il map tool
             self.getPointMapTool().cacheEntitySet = self.cacheEntitySet
             self.getPointMapTool().setMode(Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER)
             lvFuseRange = self.getClosedLvRange()
 
-            keyWords = QadMsg.translate("Command_LVDB", "None") + "/" 
+            keyWords = QadMsg.translate("Command_LVDB", "None") + "/"
             for lvFuse in lvFuseRange:
-                keyWords += QadMsg.translate("Command_LVDB", str(lvFuse)) + "/" 
+                keyWords += QadMsg.translate("Command_LVDB", str(lvFuse)) + "/"
             keyWords += QadMsg.translate("Command_LVDB", "All")
             print(keyWords)
-           
+
             # keyWords = QadMsg.translate("Command_LVDB", str(
             #     min)) + "/" + QadMsg.translate("Command_LVDB", str(max))
             default = QadMsg.translate("Command_LVDB", "All")
@@ -355,15 +359,12 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = msg
                 self.parameters["lvFuseToDraw"] = int(value)
                 self.undoGeomsInCache()
-                self.addFeatureCache(self.entity, 'out') 
+                self.addFeatureCache(self.entity, 'out')
                 self.addFromRubberbandToLayer()
                 self.undoGeomsInCache()
 
-
-                
-
             if value is None or type(value) == unicode:
-                
+
                 self.basePt.set(0, 0)
                 self.getPointMapTool().basePt = self.basePt
                 self.getPointMapTool().setMode(
@@ -386,8 +387,9 @@ class QadLVDBCommandClass(QadCommandClass):
                              QadInputModeEnum.NOT_NULL)
                 self.step = 3
 
-            elif type(value) == QgsPointXY:  
-                print('self.step == 2 - elif: ', value)# se é stato inserito il punto base
+            elif type(value) == QgsPointXY:
+                # se é stato inserito il punto base
+                print('self.step == 2 - elif: ', value)
                 self.basePt.set(value.x(), value.y())
                 print('self.basePt: ', value)
 
@@ -480,20 +482,20 @@ class QadLVDBCommandClass(QadCommandClass):
 
             return False
 
-
-        #=========================================================================
+        # =========================================================================
         # RISPOSTA ALLA RICHIESTA DEL PUNTO DI SPOSTAMENTO (da step = 2)
-        elif self.step == 4: # dopo aver atteso un punto o un numero reale si riavvia il comando
-            if msgMapTool == True:            
-                if self.getPointMapTool().point is None: # il maptool é stato attivato senza un punto
-                    if self.getPointMapTool().rightButton == True: # se usato il tasto destro del mouse
-                        return True # fine comando
+        elif self.step == 4:  # dopo aver atteso un punto o un numero reale si riavvia il comando
+            if msgMapTool == True:
+                if self.getPointMapTool().point is None:  # il maptool é stato attivato senza un punto
+                    if self.getPointMapTool().rightButton == True:  # se usato il tasto destro del mouse
+                        return True  # fine comando
                 else:
-                    self.setMapTool(self.getPointMapTool()) # riattivo il maptool
+                    # riattivo il maptool
+                    self.setMapTool(self.getPointMapTool())
                     return False
 
                 value = self.getPointMapTool().point
-            else: # il punto arriva come parametro della funzione
+            else:  # il punto arriva come parametro della funzione
                 value = msg
                 self.parameters["drawIncoming"] = value
             if value == 'Yes':
@@ -503,5 +505,5 @@ class QadLVDBCommandClass(QadCommandClass):
                 self.undoGeomsInCache()
             if value == 'No':
                 self.undoGeomsInCache()
-            
+
             return True
