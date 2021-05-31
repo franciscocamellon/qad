@@ -92,6 +92,8 @@ class QadLVDBCommandClass(QadCommandClass):
     def __del__(self):
         QadCommandClass.__del__(self)
         del self.SSGetClass
+        # self.rubberBand.hide()
+        # self.plugIn.canvas.scene().removeItem(self.rubberBand)
 
     def getPointMapTool(self, drawMode=QadGetPointDrawModeEnum.NONE):
         if self.step == 0:  # quando si é in fase di selezione entità
@@ -162,7 +164,7 @@ class QadLVDBCommandClass(QadCommandClass):
     def getClosedLV(self, attribute):
         try:
             if attribute:
-                regex = re.compile(r'\bclosed:\b', re.IGNORECASE)
+                regex = re.compile(r'\bclosed\b', re.IGNORECASE)
                 closedLV = regex.findall(attribute)
             return closedLV[0]
         except:
@@ -184,8 +186,8 @@ class QadLVDBCommandClass(QadCommandClass):
 
     def addFeatureCache(self, entity, lineType):
         featureCacheLen = len(self.featureCache)
-        layer = getLayersByName('LV_UG_Conductor')
-        layer[0].startEditing()
+        layer = getLayersByName('LV_OH_Conductor')
+        # layer[0].startEditing()
         f = entity.getFeature()
         angle = self.getLvdbAngle()
 
@@ -195,9 +197,9 @@ class QadLVDBCommandClass(QadCommandClass):
             refLineList = qad_lvdb_fun.drawInConductor(
                 self.basePoint, self.parameters["lvdbAngle"])
         elif lineType == 'out':
-            # refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"], angle)
-            refLineList = qad_lvdb_fun.drawOutConductor2(
-                self.basePoint, self.parameters["lvFuseToDraw"], angle)
+            refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"], angle)
+            # refLineList = qad_lvdb_fun.drawOutConductor2(
+            #     self.basePoint, self.parameters["lvFuseToDraw"], angle)
 
             # refLineList = qad_lvdb_fun.drawRefOutConductor(self.basePoint, angle)
 
@@ -267,7 +269,6 @@ class QadLVDBCommandClass(QadCommandClass):
         lista = list()
         for f in self.featureCache:
             lista.append(f[1])
-            qad_lvdb_fun.createPoints([f[1]])
             # layer = f[0]
             # feature = f[1]
         provider.addFeatures(lista)
@@ -310,7 +311,7 @@ class QadLVDBCommandClass(QadCommandClass):
                 self.addFeatureCache(entity, 'ref')
             #     qad_layer.addLineToLayer(self.plugIn, conductor[0], a)
             # print(self.parameters)
-            self.addFromRubberbandToLayer()
+            # self.addFromRubberbandToLayer()
 
             # imposto il map tool
             self.getPointMapTool().cacheEntitySet = self.cacheEntitySet
