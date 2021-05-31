@@ -77,7 +77,7 @@ class QadLVDBCommandClass(QadCommandClass):
         self.entity = QadEntity()
         self.targetLayer = 'LVDB-FP'
         self.lvFuseCount = 0
-        self.parameters = dict()
+        self.parameters = {"lvdbAngle":""}
         self.maxNumberFuses = QadVariables.get(
             QadMsg.translate("Environment variables", "MAXNUMBEROFFUSES"))
         self.SSGetClass = QadSSGetClass(plugIn)
@@ -92,6 +92,8 @@ class QadLVDBCommandClass(QadCommandClass):
     def __del__(self):
         QadCommandClass.__del__(self)
         del self.SSGetClass
+        # self.rubberBand.hide()
+        # self.plugIn.canvas.scene().removeItem(self.rubberBand)
 
     def getPointMapTool(self, drawMode=QadGetPointDrawModeEnum.NONE):
         if self.step == 0:  # quando si é in fase di selezione entità
@@ -119,25 +121,19 @@ class QadLVDBCommandClass(QadCommandClass):
         msgText = '\nThe {} layer is not loaded!\n'.format(self.targetLayer)
         if layer:
             self.iface.setActiveLayer(layer[0])
+            return True
         else:
             iface.messageBar().pushMessage(msgType,
                                            msgText,
                                            level=Qgis.Critical,
                                            duration=5)
-            return None, self.showMsg(QadMsg.translate("QAD", msgText))
-
-    def isEditable(self):
-        currLayer, errMsg = getCurrLayerEditable(
-            self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
-        if currLayer is None:
-
-            return False, self.showErr(errMsg)
-        else:
-            return True, currLayer
+            self.showMsg(QadMsg.translate("QAD", msgText))
+            return False
 
     def isFeatureSelected(self):
-        editable, layer = self.isEditable()
-        if editable:
+        layer, errMsg = getCurrLayerEditable(
+                self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
+        if layer:
             selectedFeature = [
                 feature for feature in layer.getSelectedFeatures()]
             featLen = len(selectedFeature)
@@ -154,7 +150,7 @@ class QadLVDBCommandClass(QadCommandClass):
             fields = selectedFeature[0].fields()
             for field in fields:
                 lvFuse = self.getClosedLV(selectedFeature[0][field.name()])
-                if lvFuse == 'CLOSED:':
+                if lvFuse == 'CLOSED':
                     self.lvFuseCount += 1
             self.lvFuseCount += 1
             return range(1, self.lvFuseCount)
@@ -162,7 +158,7 @@ class QadLVDBCommandClass(QadCommandClass):
     def getClosedLV(self, attribute):
         try:
             if attribute:
-                regex = re.compile(r'\bclosed:\b', re.IGNORECASE)
+                regex = re.compile(r'\bclosed\b', re.IGNORECASE)
                 closedLV = regex.findall(attribute)
             return closedLV[0]
         except:
@@ -172,6 +168,7 @@ class QadLVDBCommandClass(QadCommandClass):
         selectedFeature = self.isFeatureSelected()
         if selectedFeature:
             angleField = selectedFeature[0]["lvdb_angle"]
+            self.parameters["lvdbAngle"] = selectedFeature[0]["lvdb_angle"]
         return int(angleField)
 
     # ============================================================================
@@ -184,8 +181,7 @@ class QadLVDBCommandClass(QadCommandClass):
 
     def addFeatureCache(self, entity, lineType):
         featureCacheLen = len(self.featureCache)
-        layer = getLayersByName('LV_UG_Conductor')
-        layer[0].startEditing()
+        layer = getLayersByName('LV_OH_Conductor')
         f = entity.getFeature()
         angle = self.getLvdbAngle()
 
@@ -195,11 +191,7 @@ class QadLVDBCommandClass(QadCommandClass):
             refLineList = qad_lvdb_fun.drawInConductor(
                 self.basePoint, self.parameters["lvdbAngle"])
         elif lineType == 'out':
-            # refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"], angle)
-            refLineList = qad_lvdb_fun.drawOutConductor2(
-                self.basePoint, self.parameters["lvFuseToDraw"], angle)
-
-            # refLineList = qad_lvdb_fun.drawRefOutConductor(self.basePoint, angle)
+            refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"], angle)
 
         added = False
         for line in refLineList:
@@ -267,11 +259,7 @@ class QadLVDBCommandClass(QadCommandClass):
         lista = list()
         for f in self.featureCache:
             lista.append(f[1])
-            qad_lvdb_fun.createPoints([f[1]])
-            # layer = f[0]
-            # feature = f[1]
         provider.addFeatures(lista)
-
         layer.triggerRepaint()
         self.undoGeomsInCache()
 
@@ -281,11 +269,14 @@ class QadLVDBCommandClass(QadCommandClass):
                 "QAD", "\nThe coordinate reference system of the project must be a projected coordinate system.\n"))
             return True  # fine comando
 
-        currLayer, errMsg = getCurrLayerEditable(
-            self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
-        if currLayer is None:
-            self.showErr(errMsg)
-            return True
+        isLoaded = self.isLoadedLayer()
+
+        if isLoaded:
+            currLayer, errMsg = getCurrLayerEditable(
+                self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
+            if currLayer is None:
+                self.showErr(errMsg)
+                return True
 
         # =========================================================================
         # RICHIESTA SELEZIONE OGGETTI
@@ -305,12 +296,10 @@ class QadLVDBCommandClass(QadCommandClass):
             self.cacheEntitySet.appendEntitySet(self.SSGetClass.entitySet)
 
             entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
+
             for entity in entityIterator:
                 self.basePoint = entity
                 self.addFeatureCache(entity, 'ref')
-            #     qad_layer.addLineToLayer(self.plugIn, conductor[0], a)
-            # print(self.parameters)
-            self.addFromRubberbandToLayer()
 
             # imposto il map tool
             self.getPointMapTool().cacheEntitySet = self.cacheEntitySet
@@ -321,10 +310,7 @@ class QadLVDBCommandClass(QadCommandClass):
             for lvFuse in lvFuseRange:
                 keyWords += QadMsg.translate("Command_LVDB", str(lvFuse)) + "/"
             keyWords += QadMsg.translate("Command_LVDB", "All")
-            print(keyWords)
-
-            # keyWords = QadMsg.translate("Command_LVDB", str(
-            #     min)) + "/" + QadMsg.translate("Command_LVDB", str(max))
+            
             default = QadMsg.translate("Command_LVDB", "All")
             prompt = QadMsg.translate(
                 "Command_LVDB", "Specify number of fuses to draw [{0}] <{1}>: ").format(keyWords, default)
@@ -357,65 +343,34 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = self.getPointMapTool().point
             else:  # il punto arriva come parametro della funzione
                 value = msg
-                self.parameters["lvFuseToDraw"] = int(value)
+
+                if value == "None":
+                    self.undoGeomsInCache()
+                    return True
+                elif value == "All":
+                    all = [count for count in range(1, self.lvFuseCount)]
+                    self.parameters["lvFuseToDraw"] = max(all)
+                else:
+                    self.parameters["lvFuseToDraw"] = int(value)
+                
                 self.undoGeomsInCache()
                 self.addFeatureCache(self.entity, 'out')
                 self.addFromRubberbandToLayer()
-                self.undoGeomsInCache()
+                
+            print(type(value))
+            if type(value) == unicode:
 
-            if value is None or type(value) == unicode:
-
-                self.basePt.set(0, 0)
-                self.getPointMapTool().basePt = self.basePt
                 self.getPointMapTool().setMode(
                     Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE)
 
-                lvdbAngleStr = str(self.getLvdbAngle())
-                keyWords = QadMsg.translate(
-                    "Command_LVDB", lvdbAngleStr) + "/" + QadMsg.translate("Command_LVDB", "Insert")
-                default = QadMsg.translate("Command_OFFSET", lvdbAngleStr)
                 prompt = QadMsg.translate(
-                    "Command_LVDB", "Insert the angle of lvdb-fp or auto fill [{0}] <{1}>: ").format(keyWords, default)
+                    "Command_LVDB", "Specify the lvdb-fp angle <{0}>: ").format(str(self.getLvdbAngle()))
 
-                englishKeyWords = "Insert"
-                keyWords += "_" + englishKeyWords
-
-                self.waitFor(prompt,
-                             QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS,
-                             default,
-                             keyWords,
-                             QadInputModeEnum.NOT_NULL)
-                self.step = 3
-
-            elif type(value) == QgsPointXY:
-                # se é stato inserito il punto base
-                print('self.step == 2 - elif: ', value)
-                self.basePt.set(value.x(), value.y())
-                print('self.basePt: ', value)
-
-                # imposto il map tool
-                self.getPointMapTool().basePt = self.basePt
-                self.getPointMapTool().setMode(
-                    Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE)
-
-                keyWords = QadMsg.translate(
-                    "Command_LVDB", "Yes") + "/" + QadMsg.translate("Command_LVDB", "Fill")
-                default = QadMsg.translate("Command_OFFSET", "Fill")
-                prompt = QadMsg.translate(
-                    "Command_LVDB", "Insert the angle of lvdb-fp or auto fill [{0}] <{1}>: ").format(keyWords, default)
-
-                englishKeyWords = "Yes" + "/" + "Fill"
-                keyWords += "_" + englishKeyWords
-
-                # si appresta ad attendere un punto o enter o una parola chiave
-                # msg, inputType, default, keyWords, nessun controllo
-                self.waitFor(prompt,
-                             QadInputTypeEnum.KEYWORDS,
-                             default,
-                             keyWords,
-                             QadInputModeEnum.NOT_NULL)
-                self.step = 3
-
+                self.waitFor(prompt, \
+                             QadInputTypeEnum.INT, \
+                             self.parameters["lvdbAngle"], "", \
+                             QadInputModeEnum.NOT_NULL | QadInputModeEnum.NOT_NEGATIVE)
+            self.step = 3
             return False
 
         # =========================================================================
