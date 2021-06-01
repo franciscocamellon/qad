@@ -36,12 +36,11 @@ from ..qad_msg import QadMsg
 from ..qad_getpoint import QadGetPointDrawModeEnum
 from ..qad_textwindow import QadInputModeEnum, QadInputTypeEnum
 from .qad_ssget_cmd import QadSSGetClass
-from ..qad_entity import QadCacheEntitySet, QadEntityTypeEnum, QadCacheEntitySetIterator, QadEntity
+from ..qad_entity import QadCacheEntitySet, QadEntitySet, QadCacheEntitySetIterator, QadEntity
 from ..qad_variables import QadVariables
 
 from .. import qad_lvdb_fun
 from .. import qad_utils
-from .. import qad_layer
 from ..qad_dim import QadDimStyles, QadDimEntity, appendDimEntityIfNotExisting
 from ..qad_multi_geom import fromQadGeomToQgsGeom
 from ..qad_layer import getLayersByName, getCurrLayerEditable
@@ -75,14 +74,18 @@ class QadLVDBCommandClass(QadCommandClass):
         QadCommandClass.__init__(self, plugIn)
         self.iface = self.plugIn.iface
         self.entity = QadEntity()
+        self.cacheEntitySet = QadCacheEntitySet()
+        self.SSGetClass = QadSSGetClass(plugIn)
+        self.entitySet = QadEntitySet()
+        self.SSGetClass.onlyEditableLayers = True
         self.targetLayer = 'LVDB-FP'
+        self.lvdbType = 0
         self.lvFuseCount = 0
-        self.parameters = {"lvdbAngle":""}
+        self.parameters = {"lvdbAngle": ""}
         self.maxNumberFuses = QadVariables.get(
             QadMsg.translate("Environment variables", "MAXNUMBEROFFUSES"))
-        self.SSGetClass = QadSSGetClass(plugIn)
-        self.SSGetClass.onlyEditableLayers = True
-        self.cacheEntitySet = QadCacheEntitySet()
+        
+        
         self.basePt = QgsPointXY()
         self.featureCache = []
         self.undoFeatureCacheIndexes = []
@@ -132,7 +135,7 @@ class QadLVDBCommandClass(QadCommandClass):
 
     def isFeatureSelected(self):
         layer, errMsg = getCurrLayerEditable(
-                self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
+            self.plugIn.canvas, [QgsWkbTypes.PointGeometry])
         if layer:
             selectedFeature = [
                 feature for feature in layer.getSelectedFeatures()]
@@ -150,7 +153,7 @@ class QadLVDBCommandClass(QadCommandClass):
             fields = selectedFeature[0].fields()
             for field in fields:
                 lvFuse = self.getClosedLV(selectedFeature[0][field.name()])
-                if lvFuse == 'CLOSED':
+                if lvFuse == 'CLOSED:':
                     self.lvFuseCount += 1
             self.lvFuseCount += 1
             return range(1, self.lvFuseCount)
@@ -158,7 +161,7 @@ class QadLVDBCommandClass(QadCommandClass):
     def getClosedLV(self, attribute):
         try:
             if attribute:
-                regex = re.compile(r'\bclosed\b', re.IGNORECASE)
+                regex = re.compile(r'\bclosed:\b', re.IGNORECASE)
                 closedLV = regex.findall(attribute)
             return closedLV[0]
         except:
@@ -191,7 +194,8 @@ class QadLVDBCommandClass(QadCommandClass):
             refLineList = qad_lvdb_fun.drawInConductor(
                 self.basePoint, self.parameters["lvdbAngle"])
         elif lineType == 'out':
-            refLineList = qad_lvdb_fun.drawOutConductor(self.basePoint, self.parameters["lvFuseToDraw"], angle)
+            refLineList = qad_lvdb_fun.drawOutConductor(
+                self.basePoint, self.parameters["lvFuseToDraw"], angle)
 
         added = False
         for line in refLineList:
@@ -263,6 +267,35 @@ class QadLVDBCommandClass(QadCommandClass):
         layer.triggerRepaint()
         self.undoGeomsInCache()
 
+    # ============================================================================
+    # waitForLvdbAngle
+    # ============================================================================
+    def waitForLvdbAngle(self):
+        # imposto il map tool
+        self.getPointMapTool().cacheEntitySet = self.cacheEntitySet
+        self.getPointMapTool().setMode(Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE)
+
+        keyWords = QadMsg.translate("Command_LVDB", "Autofill")
+        if int(self.parameters["lvdbAngle"]) < 0:
+            default = QadMsg.translate("Command_LVDB", "Autofill")
+        else:
+            # default = self.parameters["lvdbAngle"]
+            default = "Insert"
+        prompt = QadMsg.translate(
+            "Command_OFFSET", "Specify the lvdb-fp angle or [{0}] <{1}>: ").format(keyWords, unicode(default))
+
+        englishKeyWords = "Autofill"
+        keyWords += "_" + englishKeyWords
+        # si appresta ad attendere un punto o enter o una parola chiave o un numero reale
+        # msg, inputType, default, keyWords, nessun controllo
+        print("prompt: ", prompt)
+        self.waitFor(prompt,
+                     QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS,
+                     default,
+                     keyWords,
+                     QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)
+        self.step = 4
+
     def run(self, msgMapTool=False, msg=None):
         if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
             self.showMsg(QadMsg.translate(
@@ -280,37 +313,84 @@ class QadLVDBCommandClass(QadCommandClass):
 
         # =========================================================================
         # RICHIESTA SELEZIONE OGGETTI
-        if self.step == 0:  # inizio del comando
-            if self.SSGetClass.run(msgMapTool, msg) == True:
-                # selezione terminata
-                self.step = 1
-                # aggiorno lo snapType che può essere variato dal maptool di selezione entità
-                self.getPointMapTool().refreshSnapType()
-                return self.run(msgMapTool, msg)
+        if self.step == 0: # inizio del comando
+            keyWords = QadMsg.translate("Command_LVDB", "Create") + "/" + \
+                       QadMsg.translate("Command_LVDB", "Select")
+            default = QadMsg.translate("Command_LVDB", "Select")
+            englishKeyWords = "Create" + "/" + "Select"
+            prompt = QadMsg.translate("Command_LVDB", "Specify the tool behavior [{0}] <{1}>: ").format(keyWords, default)
+
+            self.waitFor(prompt,
+                         QadInputTypeEnum.STRING | QadInputTypeEnum.KEYWORDS,
+                         default,
+                         keyWords,
+                         QadInputModeEnum.NOT_NULL | QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)         
+            self.step = 1
+            return False
 
         # =========================================================================
         # SPOSTA OGGETTI
-        elif self.step == 1:  # VERIFICAR POR SELEÇÃO MAIOR QUE UM
-            if self.SSGetClass.entitySet.count() == 0:
-                return True  # fine comando
-            self.cacheEntitySet.appendEntitySet(self.SSGetClass.entitySet)
+        elif self.step == 1:
+            if msgMapTool == True:
+                if self.getPointMapTool().point is None:  # il maptool é stato attivato senza un punto
+                    if self.getPointMapTool().rightButton == True:
+                          # se usato il tasto destro del mouse
+                        pass  # opzione di default "spostamento"
+                    else:
+                        # riattivo il maptool
+                        self.setMapTool(self.getPointMapTool())
+                        return False
 
+                value = self.getPointMapTool().point
+            else:  # il punto arriva come parametro della funzione
+                value = msg
+
+                if value == "Create":
+                    # if self.SSGetClass.entitySet.count() == 0 or self.SSGetClass.entitySet.count() > 1:
+                    if self.SSGetClass.entitySet.count() == 0:
+                        self.getPointMapTool().setMode(Qad_lvdb_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_CREATE)
+                        self.waitForPoint(QadMsg.translate("Command_LVDB", "Specify first point: "))
+                    self.step = 2
+                    return False  # fine comando
+
+                elif value == "Select":
+                    if self.SSGetClass.run(msgMapTool, msg) == True:
+                        
+                        self.getPointMapTool().refreshSnapType() # aggiorno lo snapType che può  essere variato dal maptool di selezione entità                     
+                        return self.run(msgMapTool, msg)
+        # =========================================================================
+        # RISPOSTA ALLA RICHIESTA PUNTO BASE (da step = 1)
+        elif self.step == 2:
+            if msgMapTool == True:
+                if self.getPointMapTool().point is None:  # il maptool é stato attivato senza un punto
+                    if self.getPointMapTool().rightButton == True:
+                          # se usato il tasto destro del mouse
+                        pass  # opzione di default "spostamento"
+                    else:
+                        # riattivo il maptool
+                        self.setMapTool(self.getPointMapTool())
+                        return False
+
+                value = self.getPointMapTool().point
+            else:  # il punto arriva come parametro della funzione
+                value = msg
+
+            self.getPointMapTool().setMode(Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER)
+            self.cacheEntitySet.appendEntitySet(self.SSGetClass.entitySet)
             entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
 
             for entity in entityIterator:
                 self.basePoint = entity
                 self.addFeatureCache(entity, 'ref')
 
-            # imposto il map tool
-            self.getPointMapTool().cacheEntitySet = self.cacheEntitySet
-            self.getPointMapTool().setMode(Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER)
             lvFuseRange = self.getClosedLvRange()
+            print(lvFuseRange)
 
             keyWords = QadMsg.translate("Command_LVDB", "None") + "/"
             for lvFuse in lvFuseRange:
                 keyWords += QadMsg.translate("Command_LVDB", str(lvFuse)) + "/"
             keyWords += QadMsg.translate("Command_LVDB", "All")
-            
+
             default = QadMsg.translate("Command_LVDB", "All")
             prompt = QadMsg.translate(
                 "Command_LVDB", "Specify number of fuses to draw [{0}] <{1}>: ").format(keyWords, default)
@@ -318,22 +398,22 @@ class QadLVDBCommandClass(QadCommandClass):
             englishKeyWords = "All"
             # englishKeyWords = str(min) + "/" + str(max)
             keyWords += "_" + englishKeyWords
-            # si appresta ad attendere un punto o enter o una parola chiave
-            # msg, inputType, default, keyWords, nessun controllo
+
             self.waitFor(prompt,
-                         QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS,
-                         default,
-                         keyWords,
-                         QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)
-            self.step = 2
+                        QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS,
+                        default,
+                        keyWords,
+                        QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)
+            self.step = 3
             return False
 
         # =========================================================================
         # RISPOSTA ALLA RICHIESTA PUNTO BASE (da step = 1)
-        elif self.step == 2:
+        elif self.step == 3:
             if msgMapTool == True:
                 if self.getPointMapTool().point is None:  # il maptool é stato attivato senza un punto
-                    if self.getPointMapTool().rightButton == True:  # se usato il tasto destro del mouse
+                    if self.getPointMapTool().rightButton == True:
+                          # se usato il tasto destro del mouse
                         pass  # opzione di default "spostamento"
                     else:
                         # riattivo il maptool
@@ -352,30 +432,34 @@ class QadLVDBCommandClass(QadCommandClass):
                     self.parameters["lvFuseToDraw"] = max(all)
                 else:
                     self.parameters["lvFuseToDraw"] = int(value)
-                
+
                 self.undoGeomsInCache()
                 self.addFeatureCache(self.entity, 'out')
                 self.addFromRubberbandToLayer()
-                
-            print(type(value))
-            if type(value) == unicode:
 
+            if value is None or type(value) == unicode:
+                # self.basePt.set(0, 0)
+                # self.getPointMapTool().basePt = self.basePt
                 self.getPointMapTool().setMode(
                     Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE)
 
-                prompt = QadMsg.translate(
-                    "Command_LVDB", "Specify the lvdb-fp angle <{0}>: ").format(str(self.getLvdbAngle()))
-
-                self.waitFor(prompt, \
-                             QadInputTypeEnum.INT, \
-                             self.parameters["lvdbAngle"], "", \
-                             QadInputModeEnum.NOT_NULL | QadInputModeEnum.NOT_NEGATIVE)
-            self.step = 3
+                # prompt = QadMsg.translate(
+                #     "Command_LVDB", "Specify the lvdb-fp angle <{0}>: ").format(str(self.getLvdbAngle()))
+ 
+                self.waitForLvdbAngle()
+                value = msg
+                print("value = msg: ",value)
+                # self.waitFor(prompt, \
+                #              QadInputTypeEnum.INT, \
+                #              self.parameters["lvdbAngle"], "", \
+                #              QadInputModeEnum.NOT_NULL | QadInputModeEnum.NOT_NEGATIVE)
+                self.step = 4
+                # print(self.step)
             return False
 
         # =========================================================================
         # RISPOSTA ALLA RICHIESTA SECONDO PUNTO PER SPOSTAMENTO (da step = 2)
-        elif self.step == 3:
+        elif self.step == 4:
             if msgMapTool == True:
                 if self.getPointMapTool().point is None:
                     if self.getPointMapTool().rightButton == True:
@@ -386,7 +470,14 @@ class QadLVDBCommandClass(QadCommandClass):
                 value = self.getPointMapTool().point
             else:
                 value = msg
-                self.parameters["lvdbAngle"] = int(value)
+                print("step3",value)
+                if value == "Autofill":
+                    self.parameters["lvdbAngle"] = int(self.getLvdbAngle())
+                elif isinstance(int(value), int):
+                    self.parameters["lvdbAngle"] = int(value)
+                else:
+                    self.showMsg(QadMsg.translate("Command_LVDB", "Wrong input value! Please enter a integer value from 0-360"))
+                    return True
                 print(self.parameters)
 
             if value is None or type(value) == unicode:
@@ -409,37 +500,13 @@ class QadLVDBCommandClass(QadCommandClass):
                              default,
                              keyWords,
                              QadInputModeEnum.NOT_NULL)
-                self.step = 4
-
-            elif type(value) == QgsPointXY:  # se é stato inserito il punto base
-                self.basePt.set(value.x(), value.y())
-
-                # imposto il map tool
-                self.getPointMapTool().basePt = self.basePt
-                self.getPointMapTool().setMode(
-                    Qad_lvdb_maptool_ModeEnum.LVDBFP_ANGLE_KNOWN_ASK_FOR_DRAW_CONDUCTOR)
-
-                keyWords = QadMsg.translate(
-                    "Command_LVDB", "Yes") + "/" + QadMsg.translate("Command_LVDB", "No")
-                default = QadMsg.translate("Command_OFFSET", "No")
-                prompt = QadMsg.translate(
-                    "Command_LVDB", "Draw incoming conductor? [{0}] <{1}>: ").format(keyWords, default)
-
-                englishKeyWords = "Yes" + "/" + "No"
-                keyWords += "_" + englishKeyWords
-
-                self.waitFor(prompt,
-                             QadInputTypeEnum.STRING | QadInputTypeEnum.KEYWORDS,
-                             default,
-                             keyWords,
-                             QadInputModeEnum.NOT_NULL)
-                self.step = 4
+                self.step = 5
 
             return False
 
         # =========================================================================
         # RISPOSTA ALLA RICHIESTA DEL PUNTO DI SPOSTAMENTO (da step = 2)
-        elif self.step == 4:  # dopo aver atteso un punto o un numero reale si riavvia il comando
+        elif self.step == 5:  # dopo aver atteso un punto o un numero reale si riavvia il comando
             if msgMapTool == True:
                 if self.getPointMapTool().point is None:  # il maptool é stato attivato senza un punto
                     if self.getPointMapTool().rightButton == True:  # se usato il tasto destro del mouse

@@ -23,15 +23,27 @@
 """
 
 
-from qgis.core import QgsWkbTypes, QgsGeometry
+from qgis.core import QgsMapLayer, QgsVectorLayer, QgsMessageLog, QgsProject, QgsFeature, QgsGeometry, QgsPointXY
+from qgis.PyQt.QtCore import Qt
+from qgis.gui import QgsMapToolEmitPoint, QgsMapCanvas, QgsMapTool
+import qgis.utils
+from qgis.PyQt.QtWidgets import (QHBoxLayout,
+                                 QVBoxLayout,
+                                 QMessageBox,
+                                 QHeaderView,
+                                 QWidget,
+                                 QComboBox,
+                                 QLineEdit)
 
 
 from .. import qad_utils
 from ..qad_variables import QadVariables
 from ..qad_getpoint import QadGetPoint, QadGetPointDrawModeEnum, QadGetPointSelectionModeEnum
 from ..qad_highlight import QadHighlight
+from ..qad_rubberband import QadRubberBand
 from ..qad_dim import QadDimStyles
 from ..qad_msg import QadMsg
+from ..qad_layer import getLayersByName
 from ..qad_offset_fun import offsetPolyline
 from ..qad_geom_relations import getQadGeomClosestPart
 
@@ -58,10 +70,14 @@ class Qad_lvdb_maptool(QadGetPoint):
     
    def __init__(self, plugIn):
       QadGetPoint.__init__(self, plugIn)
-                        
+      # self.iface = self.plugIn.iface.mainWindow()
+      # self.iface = qgis.utils.iface.mapCanvas()
       self.basePt = None
       self.cacheEntitySet = None
+      self.x = float()
+      self.y = float()
       self.__highlight = QadHighlight(self.canvas)
+      # self.__rubberBand = QadRubberBand(self.canvas)
 
    def hidePointMapToolMarkers(self):
       QadGetPoint.hidePointMapToolMarkers(self)
@@ -74,58 +90,53 @@ class Qad_lvdb_maptool(QadGetPoint):
    def clear(self):
       QadGetPoint.clear(self)
       self.__highlight.reset()
-      self.mode = None    
-   
-
-   def addOffSetGeometries(self, newPt):
-      self.__highlight.reset()
-       
-      # la funzione ritorna una lista con 
-      # (<minima distanza>
-      # <punto più vicino>
-      # <indice della geometria più vicina>
-      # <indice della sotto-geometria più vicina>
-      # <indice della parte della sotto-geometria più vicina>
-      # <"a sinistra di" se il punto é alla sinista della parte con i seguenti valori:
-      # -   < 0 = sinistra (per linea, arco o arco di ellisse) o interno (per cerchi, ellissi)
-      # -   > 0 = destra (per linea, arco o arco di ellisse) o esterno (per cerchi, ellissi)
-      result = getQadGeomClosestPart(self.subGeom, newPt)
-      leftOf = result[5]
-       
-      if self.offset < 0:
-         offsetDistance = result[0] # minima distanza
-      else:           
-         offsetDistance = self.offset
- 
-         if leftOf < 0: # a sinistra (per linea, arco o arco di ellisse) o interno (per cerchi, ellissi)
-            offsetDistance = offsetDistance + self.lastOffSetOnLeftSide
-         else: # alla destra
-            offsetDistance = offsetDistance + self.lastOffSetOnRightSide         
-       
-      lines = offsetPolyline(self.subGeom, \
-                             offsetDistance, \
-                             "left" if leftOf < 0 else "right", \
-                             self.gapType)
- 
-      for line in lines:
-         pts = line.asPolyline()
-         if self.layer.geometryType() == QgsWkbTypes.PolygonGeometry:
-            if line[0] == line[-1]: # se é una linea chiusa
-               offsetGeom = QgsGeometry.fromPolygonXY([pts])
-            else:
-               offsetGeom = QgsGeometry.fromPolylineXY(pts)
-         else:
-            offsetGeom = QgsGeometry.fromPolylineXY(pts)
- 
-         self.__highlight.addGeometry(self.mapToLayerCoordinates(self.layer, offsetGeom), self.layer)
+      self.mode = None
 
 
    def canvasMoveEvent(self, event):
       QadGetPoint.canvasMoveEvent(self, event)
-      
+
+      self.__highlight.reset()
       if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
-         # chamar a função que desnha os angulos referencia
-         print('Hello world')                           
+         print("hello world")
+
+   def canvasPressEvent(self, event):
+      QadGetPoint.canvasPressEvent(self, event)
+
+      self.__highlight.reset()
+
+      if self.mode == Qad_lvdb_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_CREATE:
+         point = self.toMapCoordinates(self.canvas.mouseLastXY())
+         self.x = point[0]
+         self.y = point[1]     
+
+   def canvasReleaseEvent(self, event):
+      QadGetPoint.canvasReleaseEvent(self, event)
+
+      self.__highlight.reset()
+
+      if self.mode == Qad_lvdb_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_CREATE:
+         features = []
+         layer = QgsProject.instance().mapLayersByName('LVDB-FP')[0]
+         pr = layer.dataProvider()
+         feature = QgsFeature(layer.fields())
+         geom = QgsGeometry().fromPointXY(QgsPointXY(self.x, self.y))
+         feature.setGeometry(
+                    self.mapToLayerCoordinates(layer, geom))
+         features.append(feature)
+         
+         for feat in features:
+            layer.select(feat.id())
+            if event.button() == Qt.RightButton:
+               self.canvas.unsetMapTool(self)
+            else:
+               self.iface.openFeatureForm(layer, feat, False)
+               if event.button() == QMessageBox.OK:
+                  pr.addFeature(feat)
+                  
+                  layer.triggerRepaint()  
+               
+                                    
                                  
          
     
@@ -145,10 +156,10 @@ class Qad_lvdb_maptool(QadGetPoint):
       # si richiede il primo punto per calcolo offset
       
       if self.mode == Qad_lvdb_maptool_ModeEnum.NONE_KNOWN_ASK_FOR_CREATE:
-         self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
-         self.setDrawMode(QadGetPointDrawModeEnum.NONE)
+         self.setDrawMode(QadGetPointDrawModeEnum.NONE) 
+         self.setStartPoint(self.tmpPoint)
          self.__highlight.reset()
-      if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
+      elif self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
          self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
          self.__highlight.reset()

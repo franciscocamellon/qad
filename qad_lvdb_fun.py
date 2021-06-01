@@ -46,13 +46,13 @@ from .cmd.qad_offset_cmd import QadOFFSETCommandClass as cmd
 # ===============================================================================
 def drawInConductor(entity, lvdbAngle):
     fuseLine = list()
-
+    print("lvdbAngle: ",lvdbAngle," - ",type(lvdbAngle))
     if entity.whatIs() == "ENTITY":
         canvasCRS = QgsProject.instance().crs().authid()
         destCRS = QgsCoordinateReferenceSystem(canvasCRS)
         pointGeom = entity.getGeometry(destCRS)
         fusePoint = pointGeom.asMultiPoint()
-        lvdbAngleRad = math.radians(90-lvdbAngle)
+        lvdbAngleRad = math.radians(90-int(lvdbAngle))
         lista = [1.5*(math.cos(lvdbAngleRad)), 1.5*(math.sin(lvdbAngleRad))]
 
         newPoint = QgsPointXY(
