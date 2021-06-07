@@ -39,36 +39,44 @@ from .qad_point import QadPoint
 from .qad_multi_geom import QadMultiPoint
 from .qad_layer import *
 from .cmd.qad_offset_cmd import QadOFFSETCommandClass as cmd
-
+from .cmd.qad_generic_cmd import QadCommandClass as gen_cmd
 
 # ===============================================================================
 # drawLvFuses
 # ===============================================================================
 def drawInConductor(entity, lvdbAngle):
     fuseLine = list()
-    print("lvdbAngle: ",lvdbAngle," - ",type(lvdbAngle))
-    if entity.whatIs() == "ENTITY":
-        canvasCRS = QgsProject.instance().crs().authid()
-        destCRS = QgsCoordinateReferenceSystem(canvasCRS)
-        pointGeom = entity.getGeometry(destCRS)
-        fusePoint = pointGeom.asMultiPoint()
-        lvdbAngleRad = math.radians(90-int(lvdbAngle))
-        lista = [1.5*(math.cos(lvdbAngleRad)), 1.5*(math.sin(lvdbAngleRad))]
+    fusePoint = None
+    pointGeom = QgsGeometry.fromPointXY(entity)
 
-        newPoint = QgsPointXY(
-            fusePoint[0].x()+lista[0], fusePoint[0].y()+lista[1])
-        fuseLine.append([fusePoint[0], newPoint])
+    canvasCRS = QgsProject.instance().crs().authid()
+    destCRS = QgsCoordinateReferenceSystem(canvasCRS)
+
+    lvdbAngleRad = math.radians(90-int(lvdbAngle))
+    lista = [1.5*(math.cos(lvdbAngleRad)), 1.5*(math.sin(lvdbAngleRad))]
+
+    if pointGeom.type() == QgsWkbTypes.PointGeometry:
+        fusePoint = entity
+    elif entity == QgsMultiPoint:
+        fusePoint = entity[0]
+    else:
+        if entity.whatIs == "ENTITY":
+            pointGeom = entity.getGeometry(destCRS)
+            fusePoint = pointGeom.asMultiPoint()[0]
+
+    newPoint = QgsPointXY(fusePoint[0].x()+lista[0], fusePoint[0].y()+lista[1])
+    fuseLine.append([fusePoint[0], newPoint])
+    
     return fuseLine
 
 # ===============================================================================
 # drawReferenceLines
 # ===============================================================================
-def drawReferenceLines(entity, lvdbAngle):
+def drawReferenceLines(point, lvdbAngle):
     """
     Docstring
     """
     refLinesList = list()
-    p = getPointFromEntity(entity)
 
     firstRefAngle = 450-(lvdbAngle + 120)
     firstRefAngleRad = math.radians(firstRefAngle)
@@ -82,18 +90,17 @@ def drawReferenceLines(entity, lvdbAngle):
     ]
 
     for i in range(len(lista)):
-        newPoint = QgsPointXY(p.x()+lista[i][0], p.y()+lista[i][1])
-        refLinesList.append([p, newPoint])
+        newPoint = QgsPointXY(point.x()+lista[i][0], point.y()+lista[i][1])
+        refLinesList.append([point, newPoint])
 
     refLinesList.append([refLinesList[0][1], refLinesList[1][1]])
     
     return refLinesList
 
-def createReferencePoints(entity, lvdbAngle):
+def createReferencePoints(outPoint, lvdbAngle):
     refPointsList = list()
-    point = getPointFromEntity(entity)
-    middleRefPoint = drawRefOutConductor(entity, lvdbAngle)
-    refPointsList.append(point)
+    middleRefPoint = drawRefOutConductor(outPoint, lvdbAngle)
+    refPointsList.append(outPoint)
     refPointsList.append(middleRefPoint)
 
     leftRefAngle = 450-(lvdbAngle + 120)
@@ -106,12 +113,11 @@ def createReferencePoints(entity, lvdbAngle):
     ]
 
     for i in range(len(lista)):
-        refPoint = QgsPointXY(point.x()+lista[i][0], point.y()+lista[i][1])
+        refPoint = QgsPointXY(outPoint.x()+lista[i][0], outPoint.y()+lista[i][1])
         refPointsList.append(refPoint)
     return refPointsList
 
 def createLinesFromPoints(firstPoint, lastPoint):
-    # refLineGeom = QgsGeometry.fromPolylineXY([firstPoint, lastPoint])
     refLineGeom = [firstPoint, lastPoint]
     return refLineGeom
 
@@ -120,48 +126,31 @@ def createLinesFromPoints(firstPoint, lastPoint):
 # ===============================================================================
 # drawOutConductor
 # ===============================================================================
-def drawOutConductor(entity, fusesToDraw, lvdbAngle):
+def drawOutConductor(outPoint, fusesToDraw, lvdbAngle):
     """
     Docstring
     """
     outConductor = list()
-    outPoint = getPointFromEntity(entity)
-    # lvdbAngleRad = math.radians(getReversedLvdbAngle(lvdbAngle))
 
-    firstPoint = drawRefOutConductor(entity, lvdbAngle)
+    firstPoint = drawRefOutConductor(outPoint, lvdbAngle)
     outConductor.append(firstPoint)
 
     fromLeft = (fusesToDraw - 1) // 2
-    print(fromLeft)
     fromRight = (fusesToDraw - 1) - fromLeft
-    print(fromRight)
-    # refAngle = getArcCossinus()
-    refPointsList = createReferencePoints(entity, lvdbAngle)
-    lefLine = createLinesFromPoints(refPointsList[1], refPointsList[2])
-    print(lefLine)
+    
+    refPointsList = createReferencePoints(outPoint, lvdbAngle)
+    leftLine = createLinesFromPoints(refPointsList[1], refPointsList[2])
+    
     rigthLine = createLinesFromPoints(refPointsList[1],refPointsList[3])
-    print(rigthLine)
-    pointsFromLeft = createPoints(fromLeft, lefLine, False)
+    
+    pointsFromLeft = createPoints(fromLeft, leftLine, False)
     pointsFromRight = createPoints(fromRight, rigthLine, False)
-    # for fuse in range(fromLeft):  # recebe uma line e um range fromleft
-    #     lvdbAngleRad += refAngle
-    #     newPoint = QgsPointXY(outPoint.x()+1.5*(math.cos(lvdbAngleRad)),
-    #                         outPoint.y()+1.5*(math.sin(lvdbAngleRad)))
-        # outConductor.append([outPoint, newPoint])
     outConductor.extend(pointsFromLeft)
     outConductor.extend(pointsFromRight)
 
-    # lvdbAngleRad = math.radians(getReversedLvdbAngle(lvdbAngle))
-
-    # for fuse in range(fromRight): # recebe a outra line e o outro range from right
-    #     lvdbAngleRad -= refAngle
-    #     newPoint = QgsPointXY(outPoint.x()+1.5*(math.cos(lvdbAngleRad)),
-    #                         outPoint.y()+1.5*(math.sin(lvdbAngleRad)))
-    #     outConductor.append([outPoint, newPoint])
     pairList = list()
     for point in outConductor:
         pairList.append([outPoint, point])
-    print(pairList)
     return pairList
 
 
@@ -169,11 +158,11 @@ def drawOutConductor(entity, fusesToDraw, lvdbAngle):
 # getPointFromEntity
 # ===============================================================================
 def getPointFromEntity(entity):
-    if entity.whatIs() == "ENTITY":
-        canvasCRS = QgsProject.instance().crs().authid()
-        destCRS = QgsCoordinateReferenceSystem(canvasCRS)
-        pointGeom = entity.getGeometry(destCRS)
-        outPoint = pointGeom.asMultiPoint()[0]
+    canvasCRS = QgsProject.instance().crs().authid()
+    destCRS = QgsCoordinateReferenceSystem(canvasCRS)
+    gen_cmd().mapToLayerCoordinates()
+    pointGeom = entity.getGeometry(destCRS)
+    outPoint = pointGeom.asMultiPoint()[0]
     return outPoint
 
 # ===============================================================================
@@ -190,9 +179,8 @@ def getReversedLvdbAngle(lvdbAngle):
 # ===============================================================================
 # drawRefOutConductor
 # ===============================================================================
-def drawRefOutConductor(entity, lvdbAngle):
+def drawRefOutConductor(outPoint, lvdbAngle):
     lvdbAngleRad = math.radians(getReversedLvdbAngle(lvdbAngle))
-    outPoint = getPointFromEntity(entity)
     newPoint = QgsPointXY(outPoint.x()+1.25*(math.cos(lvdbAngleRad)),
                             outPoint.y()+1.25*(math.sin(lvdbAngleRad)))
     return newPoint
@@ -223,31 +211,6 @@ def getCartesianAngle(lvdbAngle):
         cartesianAngle = 360 - lvdbAngle
     return cartesianAngle
 
-# ===============================================================================
-# getPointFromCartesianQuadrant
-# ===============================================================================
-
-def getPointFromCartesianQuadrant(lvdbAngleRad, point):
-    lvdbDegreeAngle = math.degrees(lvdbAngleRad)
-    print('lvdbDegreeAngle: ',lvdbDegreeAngle)
-    if lvdbDegreeAngle < 90:
-        newPoint = QgsPointXY(point.x()-1.5*(math.cos(lvdbAngleRad)),
-                              point.y()-1.5*(math.sin(lvdbAngleRad)))
-        print('newpoint 90: ', newPoint)
-    elif lvdbDegreeAngle > 90 and lvdbDegreeAngle < 180:
-        newPoint = QgsPointXY(point.x()+1.5*(math.cos(lvdbAngleRad)),
-                              point.y()-1.5*(math.sin(lvdbAngleRad)))
-        print('newpoint 180: ', newPoint)
-    elif lvdbDegreeAngle > 180 and lvdbDegreeAngle < 270:
-        newPoint = QgsPointXY(point.x()+1.5*(math.cos(lvdbAngleRad)),
-                              point.y()+1.5*(math.sin(lvdbAngleRad)))
-        print('newpoint 270: ', newPoint)
-    else:
-        newPoint = QgsPointXY(point.x()-1.5*(math.cos(lvdbAngleRad)),
-                              point.y()+1.5*(math.sin(lvdbAngleRad)))
-        print('newpoint 360: ', newPoint)
-    return newPoint
-
 def vectorMagnitude(point):
     magnitude = math.sqrt(point.x()**2 + point.y()**2)
     return magnitude
@@ -276,12 +239,8 @@ def createPoints(lineRange, refLine, clockwise=True):
     pointList = list()
     generator = dict()
 
-    # lineGeom = refLine.geometry()
-    # generator['segStart'] = pairs(lineGeom.asPolyline())[0]
     generator['segStart'] = pairs(refLine)[0]
-    # generator['segEnd'] = pairs(lineGeom.asPolyline())[1]
     generator['segEnd'] = pairs(refLine)[1]
-    # for points in generator.items():
     lineStart = QgsPointXY(generator['segStart'])
     lineEnd = QgsPointXY(generator['segEnd'])
     pointM = vectorDifference(lineEnd, lineStart)

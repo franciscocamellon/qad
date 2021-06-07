@@ -82,10 +82,6 @@ class QadLVDBCommandClass(QadCommandClass):
         self.lvdbType = 0
         self.lvFuseCount = 0
         self.parameters = {"lvdbAngle": ""}
-        self.maxNumberFuses = QadVariables.get(
-            QadMsg.translate("Environment variables", "MAXNUMBEROFFUSES"))
-        
-        
         self.basePt = QgsPointXY()
         self.featureCache = []
         self.undoFeatureCacheIndexes = []

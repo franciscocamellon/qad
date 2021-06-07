@@ -167,8 +167,10 @@ class QadINSERTCommandClass(QadCommandClass):
                   return False
 
             pt = self.getPointMapTool().point
+            print(pt)
          else: # il punto arriva come parametro della funzione
             pt = msg
+            print(pt)
 
          self.insPt = QgsPointXY(pt)
          self.plugIn.setLastPoint(self.insPt)

@@ -97,8 +97,8 @@ class Qad_lvdb_maptool(QadGetPoint):
       QadGetPoint.canvasMoveEvent(self, event)
 
       self.__highlight.reset()
-      if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
-         print("hello world")
+      # if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
+      #    print("hello world")
 
    def canvasPressEvent(self, event):
       QadGetPoint.canvasPressEvent(self, event)
@@ -131,11 +131,12 @@ class Qad_lvdb_maptool(QadGetPoint):
                self.canvas.unsetMapTool(self)
             else:
                self.iface.openFeatureForm(layer, feat, False)
-               if event.button() == QMessageBox.OK:
-                  pr.addFeature(feat)
-                  
-                  layer.triggerRepaint()  
+               pr.addFeature(feat)
                
+               layer.triggerRepaint()  
+               # layer.select(feat.id())
+               # self.setMode(Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER)
+               self.canvas.unsetMapTool(self)
                                     
                                  
          
@@ -162,6 +163,7 @@ class Qad_lvdb_maptool(QadGetPoint):
       elif self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
          self.setSelectionMode(QadGetPointSelectionModeEnum.POINT_SELECTION)
          self.setDrawMode(QadGetPointDrawModeEnum.NONE)
+         self.setStartPoint(self.tmpPoint)
          self.__highlight.reset()
       elif self.mode == Qad_lvdb_maptool_ModeEnum.FUSE_NUMBER_KNOWN_ASK_FOR_LVDBFP_ANGLE:
          self.setSelectionMode(QadGetPointSelectionModeEnum.NONE)

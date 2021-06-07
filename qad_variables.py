@@ -776,20 +776,6 @@ class QadVariablesClass():
                                                             VariableDescr, \
                                                             QadVariableLevelEnum.GLOBAL)
       
-      # NUMBEROFFUSES (int). Variabile globale.
-      VariableName = QadMsg.translate("Environment variables", "MAXNUMBEROFFUSES") 
-      VariableDescr = QadMsg.translate("Environment variables", "Sets thee max number of LV fuses to draw" + \
-                                       "\n0 = Don't draw any LV fuse." + \
-                                       "\n>0 = Draw a specific number of fuses get from the layer attribute." + \
-                                       "\n>100 = Draws the max number of LV fuses accordingly to the attribute layer.")
-      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
-      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
-      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(0), \
-                                                            QadVariableTypeEnum.INT, \
-                                                            0, 100, \
-                                                            VariableDescr, \
-                                                            QadVariableLevelEnum.GLOBAL)
-      
       # ORTHOMODE (int). Variabile del progetto.
       # 0 = modalità di movimento ortogonale cursore disabilitata
       # 1 = modalità di movimento ortogonale cursore abilitata
@@ -1102,6 +1088,20 @@ class QadVariablesClass():
                                                             VariableDescr, \
                                                             QadVariableLevelEnum.GLOBAL) # blue 
 
+      # LVDBMODE (int). Variabile globale.
+      # O = Creates a new point in LVDB-FP layer and the outcomming initial vectors
+      # 1 = From a selected point creates the outcomming initial vectors
+      VariableName = QadMsg.translate("Environment variables", "LVDBMODE") 
+      VariableDescr = QadMsg.translate("Environment variables", "Controls how the lvdb command will construct the geometries" + \
+                                       "\n0 = Create a new point." + \
+                                       "\n1 = Select an existent point." )
+      VariableDescr = VariableDescr + "\n" + QadMsg.translate("Environment variables", "Integer type")
+      VariableDescr = VariableDescr + ", " + QadMsg.translate("Environment variables", "global variable") + "."
+      self.__VariableValuesDict[VariableName] = QadVariable(VariableName, int(0), \
+                                                            QadVariableTypeEnum.INT, \
+                                                            0, 1, \
+                                                            VariableDescr, \
+                                                            QadVariableLevelEnum.GLOBAL)
 
    def getVarNames(self):
       """
