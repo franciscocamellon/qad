@@ -312,3 +312,4 @@ cmd/__pycache__/qad_text_cmd.cpython-37.pyc
 cmd/__pycache__/qad_trim_cmd.cpython-37.pyc
 cmd/__pycache__/qad_undoredo_cmd.cpython-37.pyc
 .vscode/settings.json
+qad.ini

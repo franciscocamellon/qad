@@ -185,10 +185,10 @@ class QadLVOHCommandClass(QadCommandClass):
         if lineType == 'ref':
             refLineList = qad_lvdb_fun.drawReferenceLines(entity, angle)
         elif lineType == 'in':
-            refLineList = qad_lvdb_fun.drawOutConductor(
-                self.basePoint, 2, angle)
-            # refLineList = qad_lvdb_fun.drawInConductor(
-            #     self.basePoint, self.parameters["lvdbAngle"])
+            # refLineList = qad_lvdb_fun.drawOutConductor(
+            #     self.basePoint, 2, angle)
+            refLineList = qad_lvdb_fun.drawInConductor(
+                self.basePoint, self.parameters["lvdbAngle"])
         elif lineType == 'out':
             refLineList = qad_lvdb_fun.drawOutConductor(
                 self.basePoint, self.parameters["lvFuseToDraw"], angle)
@@ -202,6 +202,7 @@ class QadLVOHCommandClass(QadCommandClass):
                 # trasformo la geometria nel crs del layer
                 refLineFeat.setGeometry(
                     self.mapToLayerCoordinates(layer[0], refLineGeom))
+                # refLineFeat.setGeometry(refLineGeom)
 
                 self.featureCache.append([layer[0], refLineFeat])
                 self.addFeatureToRubberBand(layer[0], refLineFeat)
@@ -366,24 +367,23 @@ class QadLVOHCommandClass(QadCommandClass):
                         return False
 
                 value = self.getPointMapTool().point
-                
             else:  # il punto arriva come parametro della funzione
                 value = msg
-                print(value)
                 
             if type(value) == QgsPointXY:
                 self.basePoint = QgsPointXY(value)
                 self.addFeature(self.basePoint)
                 self.plugIn.setLastPoint(self.basePoint)
+                self.addFeatureCache(self.basePoint, 'ref')
 
             if value is None or type(value) == unicode:
 
-                selectedFeature = self.isFeatureSelected()
-                geom = selectedFeature[0].geometry()
-                selectedPoint = geom.asMultiPoint()[0]
-                self.basePoint = selectedPoint
+                self.cacheEntitySet.appendEntitySet(self.SSGetClass.entitySet)
+                entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
 
-                self.addFeatureCache(selectedPoint, 'ref')
+                for entity in entityIterator:
+                    self.basePoint = qad_lvdb_fun.returnPointFromEntityOrQGSPoint(entity)
+                    self.addFeatureCache(self.basePoint, 'ref')
 
                 lvFuseRange = self.getClosedLvRange('CLOSED:')
 
