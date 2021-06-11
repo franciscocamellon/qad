@@ -625,22 +625,17 @@ def findFile(fileName):
    oppure "" in caso di file non trovato
    """
    path = QadVariables.get(QadMsg.translate("Environment variables", "SUPPORTPATH"))
-   print('path: ',path)
    if len(path) > 0:
       path += ";"        
    path += QgsApplication.qgisSettingsDirPath() + "python/plugins/qad/"
-   print('path+=: ', path)
    # lista di directory separate da ";"
    dirList = path.strip().split(";")
-   print('dirlist: ', dirList)
    for _dir in dirList:
       _dir = QDir.cleanPath(_dir)
-      print('_dir', _dir)
       if _dir != "":
          if _dir.endswith("/") == False:
             _dir = _dir + "/"
          _dir = _dir + fileName
-         print('_dir: ',_dir)
          
          if os.path.exists(_dir):
             return _dir

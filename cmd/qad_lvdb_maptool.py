@@ -98,7 +98,6 @@ class Qad_lvdb_maptool(QadGetPoint):
 
       self.__highlight.reset()
       # if self.mode == Qad_lvdb_maptool_ModeEnum.ASK_FOR_LV_FUSE_NUMBER:
-      #    print("hello world")
 
    def canvasPressEvent(self, event):
       QadGetPoint.canvasPressEvent(self, event)

@@ -118,7 +118,6 @@ class QadOFFSETCommandClass(QadCommandClass):
       # -   < 0 = sinistra (per linea, arco o arco di ellisse) o interno (per cerchi, ellissi)
       # -   > 0 = destra (per linea, arco o arco di ellisse) o esterno (per cerchi, ellissi)
       result = getQadGeomClosestPart(self.subGeom, newPt)
-      print(result)
       leftOf = result[5]
 
       if self.offset < 0:
