@@ -76,11 +76,9 @@ class QadLVOHCommandClass(QadCommandClass):
         self.SSGetClass.onlyEditableLayers = True
         self.lvdbMode = QadVariables.get(
             QadMsg.translate("Environment variables", "LVDBMODE"))
-        self.targetLayer = 'LVDB-FP'
+        self.targetLayerName = 'LVDB-FP'
         self.nOperationsToUndo = 0
-        self.lvdbType = 0
-        self.lvFuseCount = 0
-        self.parameters = {"lvdbAngle": ""}
+        self.parameters = dict()
         self.basePoint = None
         self.featureCache = []
         self.undoFeatureCacheIndexes = []
@@ -90,8 +88,6 @@ class QadLVOHCommandClass(QadCommandClass):
     def __del__(self):
         QadCommandClass.__del__(self)
         del self.SSGetClass
-        # self.rubberBand.hide()
-        # self.plugIn.canvas.scene().removeItem(self.rubberBand)
 
     def getPointMapTool(self, drawMode=QadGetPointDrawModeEnum.NONE):
         if self.step == 0:  # quando si é in fase di selezione entità
@@ -111,9 +107,10 @@ class QadLVOHCommandClass(QadCommandClass):
             return self.contextualMenu
 
     def isLoadedLayer(self):
-        layer = qad_layer.getLayersByName(self.targetLayer)
+        layer = qad_layer.getLayersByName(self.targetLayerName)
         msgType = QadMsg.translate("Command_LVDB", "Error")
-        msgText = '\nThe {} layer is not loaded!\n'.format(self.targetLayer)
+        msgText = '\nThe {} layer is not loaded!\n'.format(
+            self.targetLayerName)
         if layer:
             self.iface.setActiveLayer(layer[0])
             return True
@@ -139,7 +136,8 @@ class QadLVOHCommandClass(QadCommandClass):
                     "QAD", '\nPlease select one feature from {}.\n'.format(layer.name())))
                 return False
 
-    def getClosedLvRange(self, searchedStr):
+    def getClosedFusesToDraw(self):
+        lvFuseCount = 0
         selectedFeature = self.isFeatureSelected()
         listOfInterestFields = ["lvf_1", "lvf_2", "lvf_3", "lvf_4",
                                 "lvf_5", "lvf_6", "lvf_7", "lvf_8", "lvf_9", "lvf_10"]
@@ -147,51 +145,51 @@ class QadLVOHCommandClass(QadCommandClass):
             fields = selectedFeature[0].fields()
             for field in fields:
                 if field.name() in listOfInterestFields:
-                    lvFuse = self.getClosedLV(selectedFeature[0][field.name()], searchedStr)
-                    if lvFuse == searchedStr:
-                        self.lvFuseCount += 1
-            self.lvFuseCount += 1
-            if self.lvFuseCount > 1:
-                return range(1, self.lvFuseCount)
+                    lvFuse = self.getClosedOutConductor(
+                        selectedFeature[0][field.name()])
+                    if lvFuse.lower() == "closed:":
+                        lvFuseCount += 1
+            if lvFuseCount == 1:
+                return range(1, 1)
+            if lvFuseCount > 1:
+                return range(1, lvFuseCount)
             else:
-                return range(self.lvFuseCount)
+                return range(0)
 
-
-    def getClosedLV(self, attribute, strRegex):
+    def getClosedOutConductor(self, attribute):
         try:
             if attribute:
-                regex = re.compile(r'\b{0}\b'.format(strRegex), re.IGNORECASE)
+                regex = re.compile(r'\bclosed:\b', re.IGNORECASE)
                 closedLV = regex.findall(attribute)
             return closedLV[0]
         except:
             pass
 
     def getLvdbAngle(self):
+        lvdbAngle = 0
         selectedFeature = self.isFeatureSelected()
         if selectedFeature:
-            angleField = selectedFeature[0]["lvdb_angle"]
-            self.parameters["lvdbAngle"] = selectedFeature[0]["lvdb_angle"]
-        return int(angleField)
+            lvdbAngle = int(selectedFeature[0]["lvdb_angle"])
+            return lvdbAngle
 
     # ============================================================================
     # addFeatureCache
     # ============================================================================
 
     def addFeatureCache(self, entity, lineType):
+        lvdbAngle = self.getLvdbAngle()
         featureCacheLen = len(self.featureCache)
         layer = qad_layer.getLayersByName('LV_OH_Conductor')
-        angle = self.getLvdbAngle()
 
         if lineType == 'ref':
-            refLineList = qad_lvdb_fun.drawReferenceLines(entity, angle)
+            refLineList = qad_lvdb_fun.drawReferenceLines(
+                entity, lvdbAngle)
         elif lineType == 'in':
-            # refLineList = qad_lvdb_fun.drawOutConductor(
-            #     self.basePoint, 2, angle)
             refLineList = qad_lvdb_fun.drawInConductor(
-                self.basePoint, self.parameters["lvdbAngle"])
+                self.basePoint, lvdbAngle)
         elif lineType == 'out':
             refLineList = qad_lvdb_fun.drawOutConductor(
-                self.basePoint, self.parameters["lvFuseToDraw"], angle)
+                self.basePoint, self.parameters["lvFuseToDraw"], lvdbAngle)
 
         added = False
         for line in refLineList:
@@ -270,7 +268,7 @@ class QadLVOHCommandClass(QadCommandClass):
     def waitForLvdbAngle(self):
 
         keyWords = QadMsg.translate("Command_LVDB", "Autofill")
-        if int(self.parameters["lvdbAngle"]) < 0:
+        if self.parameters["lvdbAngle"] < 0:
             default = QadMsg.translate("Command_LVDB", "Autofill")
         else:
             default = "Insert"
@@ -279,7 +277,7 @@ class QadLVOHCommandClass(QadCommandClass):
 
         englishKeyWords = "Autofill"
         keyWords += "_" + englishKeyWords
-        
+
         self.waitFor(prompt,
                      QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS,
                      default,
@@ -288,26 +286,25 @@ class QadLVOHCommandClass(QadCommandClass):
         self.step = 4
 
     def addFeature(self, point):
-        layer = qad_layer.getLayersByName(self.targetLayer)[0]
+
+        layer = qad_layer.getLayersByName(self.targetLayerName)[0]
         transformedPoint = self.mapToLayerCoordinates(layer, point)
-        g = QgsGeometry.fromPointXY(transformedPoint)
-        f = QgsFeature()
-        f.setGeometry(g)
+        geom = QgsGeometry.fromPointXY(transformedPoint)
+        feature = QgsFeature()
+        feature.setGeometry(geom)
         fields = layer.fields()
-        f.setFields(fields)
-        layer.select(f.id())
+        feature.setFields(fields)
+        layer.select(feature.id())
 
         provider = layer.dataProvider()
-        for field in fields.toList():
-            i = fields.indexFromName(field.name())
-            f[field.name()] = provider.defaultValue(i)
 
-        self.iface.openFeatureForm(layer, f, False)
-
-        return qad_layer.addFeatureToLayer(self.plugIn, layer, f)
+        self.iface.openFeatureForm(layer, feature, False)
+        provider.addFeature(feature)
+        layer.triggerRepaint()
 
     # =========================================================================
     # RUN
+
     def run(self, msgMapTool=False, msg=None):
         if self.plugIn.canvas.mapSettings().destinationCrs().isGeographic():
             self.showMsg(QadMsg.translate(
@@ -369,43 +366,43 @@ class QadLVOHCommandClass(QadCommandClass):
                 value = self.getPointMapTool().point
             else:  # il punto arriva come parametro della funzione
                 value = msg
-                
+
             if type(value) == QgsPointXY:
                 self.basePoint = QgsPointXY(value)
                 self.addFeature(self.basePoint)
-                self.plugIn.setLastPoint(self.basePoint)
                 self.addFeatureCache(self.basePoint, 'ref')
 
-            if value is None or type(value) == unicode:
+            elif value is None or type(value) == unicode:
 
                 self.cacheEntitySet.appendEntitySet(self.SSGetClass.entitySet)
                 entityIterator = QadCacheEntitySetIterator(self.cacheEntitySet)
 
                 for entity in entityIterator:
-                    self.basePoint = qad_lvdb_fun.returnPointFromEntityOrQGSPoint(entity)
+                    self.basePoint = qad_lvdb_fun.returnPointFromEntityOrQGSPoint(
+                        entity)
                     self.addFeatureCache(self.basePoint, 'ref')
 
-                lvFuseRange = self.getClosedLvRange('CLOSED:')
+            self.lvFuseRange = self.getClosedFusesToDraw()
 
-                keyWords = QadMsg.translate("Command_LVDB", "None") + "/"
-                for lvFuse in lvFuseRange:
-                    keyWords += QadMsg.translate("Command_LVDB", str(lvFuse)) + "/"
-                keyWords += QadMsg.translate("Command_LVDB", "All")
+            keyWords = QadMsg.translate("Command_LVDB", "None") + "/"
+            for lvFuse in self.lvFuseRange:
+                keyWords += QadMsg.translate("Command_LVDB", str(lvFuse)) + "/"
+            keyWords += QadMsg.translate("Command_LVDB", "All")
 
-                default = QadMsg.translate("Command_LVDB", "All")
-                prompt = QadMsg.translate(
-                    "Command_LVDB", "Specify number of fuses to draw [{0}] <{1}>: ").format(keyWords, default)
+            default = QadMsg.translate("Command_LVDB", "All")
+            prompt = QadMsg.translate(
+                "Command_LVDB", "Specify number of fuses to draw [{0}] <{1}>: ").format(keyWords, default)
 
-                englishKeyWords = "All"
-                keyWords += "_" + englishKeyWords
+            englishKeyWords = "All"
+            keyWords += "_" + englishKeyWords
 
-                self.waitFor(prompt,
-                            QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS,
-                            default,
-                            keyWords,
-                            QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)
-                self.step = 3
-                return False
+            self.waitFor(prompt,
+                         QadInputTypeEnum.INT | QadInputTypeEnum.KEYWORDS,
+                         default,
+                         keyWords,
+                         QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE)
+            self.step = 3
+            return False
 
         # =========================================================================
         # RISPOSTA ALLA RICHIESTA PUNTO BASE (da step = 1)
@@ -430,7 +427,7 @@ class QadLVOHCommandClass(QadCommandClass):
                     self.undoGeomsInCache()
                     return True
                 elif value == "All":
-                    all = [count for count in range(1, self.lvFuseCount)]
+                    all = [count for count in self.lvFuseRange]
                     self.parameters["lvFuseToDraw"] = max(all)
                 else:
                     self.parameters["lvFuseToDraw"] = int(value)
@@ -444,7 +441,7 @@ class QadLVOHCommandClass(QadCommandClass):
                 self.waitForLvdbAngle()
                 value = msg
                 self.step = 4
-                
+
             return False
 
         # =========================================================================
@@ -462,17 +459,16 @@ class QadLVOHCommandClass(QadCommandClass):
                 value = msg
                 print("step3", value)
                 if value == "Autofill":
-                    self.parameters["lvdbAngle"] = int(self.getLvdbAngle())
+                    self.parameters["lvdbAngle"] = self.getLvdbAngle()
                 elif isinstance(int(value), int):
-                    self.parameters["lvdbAngle"] = int(value)
+                    self.parameters["lvdbAngle"] = value
                 else:
                     self.showMsg(QadMsg.translate(
                         "Command_LVDB", "Wrong input value! Please enter a integer value from 0-360"))
                     return True
-                print(self.parameters)
 
             if value is None or type(value) == unicode:
-                
+
                 keyWords = QadMsg.translate(
                     "Command_LVDB", "Yes") + "/" + QadMsg.translate("Command_LVDB", "No")
                 default = QadMsg.translate("Command_OFFSET", "No")
@@ -506,7 +502,7 @@ class QadLVOHCommandClass(QadCommandClass):
                 value = self.getPointMapTool().point
             else:  # il punto arriva come parametro della funzione
                 value = msg
-                self.parameters["drawIncoming"] = value
+
             if value == 'Yes':
                 self.undoGeomsInCache()
                 self.addFeatureCache(self.basePoint, 'in')
@@ -514,5 +510,4 @@ class QadLVOHCommandClass(QadCommandClass):
                 self.undoGeomsInCache()
             if value == 'No':
                 self.undoGeomsInCache()
-
             return True

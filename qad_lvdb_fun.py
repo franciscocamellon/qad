@@ -46,28 +46,29 @@ from .cmd.qad_generic_cmd import QadCommandClass as gen_cmd
 # ===============================================================================
 
 
-def drawInConductor(entity, lvdbAngle):
+def drawInConductor(entityPoint, lvdbAngle):
     fuseLine = list()
-    fusePoint = None
-    pointGeom = QgsGeometry.fromPointXY(entity)
+    fusePoint = returnPointFromEntityOrQGSPoint(entityPoint)
+    pointGeom = QgsGeometry.fromPointXY(entityPoint)
 
     canvasCRS = QgsProject.instance().crs().authid()
     destCRS = QgsCoordinateReferenceSystem(canvasCRS)
 
-    lvdbAngleRad = math.radians(90-int(lvdbAngle))
-    lista = [1.5*(math.cos(lvdbAngleRad)), 1.5*(math.sin(lvdbAngleRad))]
+    lvdbAngleRad = math.radians(90 - lvdbAngle)
+    cossinusList = [1.5*(math.cos(lvdbAngleRad)), 1.5*(math.sin(lvdbAngleRad))]
 
-    if pointGeom.type() == QgsWkbTypes.PointGeometry:
-        fusePoint = entity
-    elif entity == QgsMultiPoint:
-        fusePoint = entity[0]
+    if type(fusePoint) == QgsPointXY:
+        newPoint = QgsPointXY(
+            fusePoint.x() + cossinusList[0], fusePoint.y() + cossinusList[1])
+    elif type(fusePoint) == QgsMultiPoint:
+        newPoint = QgsPointXY(
+            fusePoint[0].x() + cossinusList[0], fusePoint[0].y() + cossinusList[1])
     else:
-        if entity.whatIs == "ENTITY":
-            pointGeom = entity.getGeometry(destCRS)
+        if entityPoint.whatIs == "ENTITY":
+            pointGeom = entityPoint.getGeometry(destCRS)
             fusePoint = pointGeom.asMultiPoint()[0]
 
-    newPoint = QgsPointXY(fusePoint[0].x()+lista[0], fusePoint[0].y()+lista[1])
-    fuseLine.append([fusePoint[0], newPoint])
+    fuseLine.append([fusePoint, newPoint])
 
     return fuseLine
 
